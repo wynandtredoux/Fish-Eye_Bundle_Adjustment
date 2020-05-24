@@ -72,7 +72,7 @@ for i = 1:2:size(INT,1)
 end
 INT = tmp;
 clear tmp
-
+%% Main Loop
 % initialize xhat (initial values for unknowns [Xc Yc Zc omeaga phi kappa], from EXT)
 [xhaterror, xhat] = Buildxhat(EXT);
 if xhaterror == 1
@@ -90,17 +90,28 @@ while deltasum > threshold
     count = count + 1;
     disp(['Itteration ' num2str(count) ':']);
     %% build A and w matricies
-    [Awerror, A, w] = BuildAw(PHO, EXT, CNT, INT, xhat);
+    [Awerror, A, w, G] = BuildAwG(PHO, EXT, CNT, INT, xhat);
     if Awerror == 1
         disp('Error building A and w');
         return
     end
-    %disp('Aw Built!')
+    
+    %% Build G matrix
+    
     
     %% Calculate solution
     u = A'*w;
     N = A'*A;
-    delta = -(N)^-1*u;
+    
+    NG = [N G;
+        G' zeros(size(G,2));];
+    uG = [u; zeros(size(G,2),1);];
+        
+    delta_k = -NG^-1*uG;
+    delta = delta_k(1:size(u,1),:);
+    k = delta_k(size(u,1)+1:end,:);
+    
+    %delta = -(N)^-1*u;
     xhat = xhat + delta;
     %xhat_arr = [xhat_arr; xhat';];
         
