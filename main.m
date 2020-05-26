@@ -5,7 +5,7 @@ close all
 format longg
 clc
 %% read in files
-[filereaderror, files] = ReadFiles({'.pho','.ext','.cnt','.int'});
+[filereaderror, files] = ReadFiles({'.pho','.ext','.cnt','.int','.cfg'});
 if filereaderror == 1
     disp ('Error reading files')
     return
@@ -21,6 +21,11 @@ u = size(EXT,1)*6; % number of unknowns, (Xc, Yc, Zc, omega, phi, kappa) for eac
 CNT = files{3}; % object coordinates [TargetID X Y Z]
 INT = files{4}; % IOPs [CameraID yaxis_dir xmin ymin xmax ymax]
 %                      [xp yp c]
+
+%% Get settings from cfg file
+CFG = files{5};
+Iteration_Cap = findSetting(CFG,'Iteration_Cap');
+threshold = findSetting(CFG,'Threshold_Value');
 
 %% Convert files from String to Cell
 % PHO
@@ -80,7 +85,7 @@ if xhaterror == 1
     return
 end
 
-threshold = 0.00000001;
+%threshold = 0.00000001;
 deltasum = 100;
 count = 0;
 %xhat_arr = xhat';
@@ -119,8 +124,8 @@ while deltasum > threshold
     deltasumarr = [deltasumarr deltasum];
     % residuals
     %v = A*delta + w;
-    % constrain loop to 100 itterations
-    if count > 100
+    % constrain loop itterations
+    if count > Iteration_Cap
         break;
     end
 end
