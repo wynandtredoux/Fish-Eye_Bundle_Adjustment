@@ -1,11 +1,18 @@
 %% Build design matrix A, misclosure matrix w and inner constrains design matrix G
-function [error, A, misclosure, G] = BuildAwG(PHO,EXT,CNT,INT,xhat)
+function [error, A, misclosure, G] = BuildAwG(PHO,EXT,CNT,INT,xhat,... % data
+    BuildG, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k) % settings
 error = 0;
 % A should be an nxu matrix, w is nx1
 n = size(PHO,1)*2; % number of measurements
-u = size(EXT,1)*6; % number of unknowns (Xc, Yc, Zc, omega, phi, kappa) for each imageG = zeros(u, 7)
-d = 7; %number of inner constraints (X, Y, Z, w, p, k, and scale)
-G = zeros(u,d);
+numimg = size(EXT,1);
+numcam = size(INT,1)/2;
+u = size(xhat,1); % number of unknowns
+if BuildG
+    d = 7; %number of inner constraints (X, Y, Z, w, p, k, and scale)
+    G = zeros(u,d);
+else
+    G = 0;
+end
 A = zeros(n,u);
 misclosure = zeros(n,1);
 images = {};
@@ -34,6 +41,7 @@ for i=1:length(PHO)
     cameraID = EXT{ext_index,2};
     % get unknowns from xhat
     xhat_index = ext_index*6-5;
+    
     Xc = xhat(xhat_index);
     Yc = xhat(xhat_index + 1);
     Zc = xhat(xhat_index + 2);
@@ -164,15 +172,17 @@ for i=1:length(PHO)
      misclosure(Arow:Arow+1,1) = [w11;
                         w21;];
     %% Build G rows
-    Gblock = [
-        1 0 0 0 -Zc Yc Xc;
-        0 1 0 Zc 0 -Xc Yc;
-        0 0 1 -Yc Xc 0 Zc;
-        0 0 0 -1 -sin(w)*tan(p) cos(w)*tan(p) 0;
-        0 0 0 0 -cos(w) -sin(w) 0;
-        0 0 0 0 sin(w)*sec(p) -cos(w)*sec(p) 0;
-        ];
-    % place Gblock in the correct rows of G
-    G(xhat_index:xhat_index+5,:) = Gblock; % the rows of G correspond to the rows in xhat
+    if BuildG
+        Gblock = [
+            1 0 0 0 -Zc Yc Xc;
+            0 1 0 Zc 0 -Xc Yc;
+            0 0 1 -Yc Xc 0 Zc;
+            0 0 0 -1 -sin(w)*tan(p) cos(w)*tan(p) 0;
+            0 0 0 0 -cos(w) -sin(w) 0;
+            0 0 0 0 sin(w)*sec(p) -cos(w)*sec(p) 0;
+            ];
+        % place Gblock in the correct rows of G
+        G(xhat_index:xhat_index+5,:) = Gblock; % the rows of G correspond to the rows in xhat
+    end
 end
 end
