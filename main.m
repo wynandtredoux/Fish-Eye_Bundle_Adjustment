@@ -24,8 +24,29 @@ INT = files{4}; % IOPs [CameraID yaxis_dir xmin ymin xmax ymax]
 
 %% Get settings from cfg file
 CFG = files{5};
-Iteration_Cap = findSetting(CFG,'Iteration_Cap');
-threshold = findSetting(CFG,'Threshold_Value');
+cfg_errors = 0;
+
+[Iteration_Cap,cfg_errors] = findSetting(CFG,'Iteration_Cap',cfg_errors);
+[threshold,cfg_errors] = findSetting(CFG,'Threshold_Value',cfg_errors);
+
+[Inner_Constraints,cfg_errors] = findSetting(CFG,'Inner_Constraints',cfg_errors,1);
+
+
+[Estimate_Xc,cfg_errors] = findSetting(CFG,'Estimate_Xc',cfg_errors,1);
+[Estimate_Yc,cfg_errors] = findSetting(CFG,'Estimate_Yc',cfg_errors,1);
+[Estimate_Zc,cfg_errors] = findSetting(CFG,'Estimate_Zc',cfg_errors,1);
+[Estimate_w,cfg_errors] = findSetting(CFG,'Estimate_Omega',cfg_errors,1);
+[Estimate_p,cfg_errors] = findSetting(CFG,'Estimate_Phi',cfg_errors,1);
+[Estimate_k,cfg_errors] = findSetting(CFG,'Estimate_Kappa',cfg_errors,1);
+
+[Estimate_c,cfg_errors] = findSetting(CFG,'Estimate_c',cfg_errors,1);
+[Estimate_xp,cfg_errors] = findSetting(CFG,'Estimate_xp',cfg_errors,1);
+[Estimate_yp,cfg_errors] = findSetting(CFG,'Estimate_yp',cfg_errors,1);
+
+if cfg_errors>0
+    disp ('Error getting settings')
+    return
+end
 
 %% Convert files from String to Cell
 % PHO
@@ -79,53 +100,54 @@ INT = tmp;
 clear tmp
 %% Main Loop
 % initialize xhat (initial values for unknowns [Xc Yc Zc omeaga phi kappa], from EXT)
-[xhaterror, xhat] = Buildxhat(EXT);
+[xhaterror, xhat] = Buildxhat(EXT, INT, ... % data
+    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_c, Estimate_xp, Estimate_yp); % settings
 if xhaterror == 1
     disp('Error building xhat');
     return
 end
 
-%threshold = 0.00000001;
 deltasum = 100;
 count = 0;
-%xhat_arr = xhat';
+xhat_arr = xhat';
 deltasumarr = [];
 % main loop
 while deltasum > threshold
     count = count + 1;
     disp(['Itteration ' num2str(count) ':']);
     %% build A and w matricies
-    [Awerror, A, w, G] = BuildAwG(PHO, EXT, CNT, INT, xhat);
+    [Awerror, A, w, G] = BuildAwG(PHO, EXT, CNT, INT, xhat,...
+        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k);
     if Awerror == 1
         disp('Error building A and w');
         return
     end
     
-    %% Build G matrix
-    
-    
     %% Calculate solution
     u = A'*w;
     N = A'*A;
     
-    NG = [N G;
-        G' zeros(size(G,2));];
-    uG = [u; zeros(size(G,2),1);];
-        
-    delta_k = -NG^-1*uG;
-    delta = delta_k(1:size(u,1),:);
-    k = delta_k(size(u,1)+1:end,:);
-    
-    %delta = -(N)^-1*u;
+    if Inner_Constraints
+        NG = [N G;
+            G' zeros(size(G,2));];
+        uG = [u; zeros(size(G,2),1);];
+
+        delta_k = -NG^-1*uG;
+        delta = delta_k(1:size(u,1),:);
+        k = delta_k(size(u,1)+1:end,:);
+    else  
+        delta = -(N)^-1*u;
+    end
     xhat = xhat + delta;
-    %xhat_arr = [xhat_arr; xhat';];
+    xhat_arr = [xhat_arr; xhat';];
         
     deltasum = sumabs(delta)
     deltasumarr = [deltasumarr deltasum];
     % residuals
     %v = A*delta + w;
     % constrain loop itterations
-    if count > Iteration_Cap
+    if count >= Iteration_Cap
+        disp('Iteration Cap reached. This can be changed in the .cfg file')
         break;
     end
 end
