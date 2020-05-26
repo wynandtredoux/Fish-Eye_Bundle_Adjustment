@@ -1,4 +1,4 @@
-%% Main bundle adjustment script
+%% Bundle adjustment script using equidistant fish-eye model
 % Wynand Tredoux, May 2020
 clear all
 close all
