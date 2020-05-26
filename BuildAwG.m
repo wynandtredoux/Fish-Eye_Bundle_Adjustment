@@ -1,15 +1,15 @@
-%% Build design matrix A and misclosure matrix w
+%% Build design matrix A, misclosure matrix w and inner constrains design matrix G
 function [error, A, misclosure, G] = BuildAwG(PHO,EXT,CNT,INT,xhat)
 error = 0;
 % A should be an nxu matrix, w is nx1
 n = size(PHO,1)*2; % number of measurements
 u = size(EXT,1)*6; % number of unknowns (Xc, Yc, Zc, omega, phi, kappa) for each imageG = zeros(u, 7)
-d = 7; %number of inner constaints (X, Y, Z, w, p, k, and scale)
+d = 7; %number of inner constraints (X, Y, Z, w, p, k, and scale)
 G = zeros(u,d);
 A = zeros(n,u);
 misclosure = zeros(n,1);
 images = {};
-% For every row of the image in PHO (which corrolates to 2 rows of A and w)
+% For every row of the image in PHO (which correlates to 2 rows of A and w)
 for i=1:length(PHO)
     % get variables for current rows
     targetID = PHO{i,1}; % target name/id
@@ -68,7 +68,7 @@ for i=1:length(PHO)
         end        
     end
     if int_index < 0
-        errordlg(['Could not find camrea ' cameraID ' from .ext in .int. Check that the camrea ID exists in both files'],['Error on camrea ' cameraID]);
+        errordlg(['Could not find camera ' cameraID ' from .ext in .int. Check that the camera ID exists in both files'],['Error on camera ' cameraID]);
         error = 1;
         return
     end
@@ -173,6 +173,6 @@ for i=1:length(PHO)
         0 0 0 0 sin(w)*sec(p) -cos(w)*sec(p) 0;
         ];
     % place Gblock in the correct rows of G
-    G(xhat_index:xhat_index+5,:) = Gblock; % the rows of G corrospond to the rows in xhat
+    G(xhat_index:xhat_index+5,:) = Gblock; % the rows of G correspond to the rows in xhat
 end
 end
