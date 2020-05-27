@@ -86,7 +86,7 @@ for i=1:length(PHO)
         k = xhat(xhat_index+xhat_count);
         %xhat_count = xhat_count + 1;
     else
-        k = EXT{ext_index,5};
+        k = EXT{ext_index,8};
     end
     
     % find correct target in CNT
