@@ -1,6 +1,6 @@
 % create the ux1 xhat vector from the .ext file
 function [error, xhat] = Buildxhat(EXT, INT, ... % data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_c, Estimate_xp, Estimate_yp) % settings
+    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c) % settings
 error = 0;
 numImg = size(EXT,1); % number of images
 numCam = size(INT,1)/2;% number of cameras
@@ -51,11 +51,23 @@ for i = 1:numImg
     end
 end
 
-% count = 1;
-% for i = 1:size(EXT,1)
-%     for j = 3:8
-%         xhat(count) = EXT{i,j};
-%         count = count + 1;    
-%     end
-% end
+% camera IOPs
+for i=1:numCam
+    xp = INT{i*2,1};
+    yp = INT{i*2,2};
+    c = INT{i*2,3};
+    
+    if Estimate_xp
+        xhat(count) = xp;
+        count = count + 1;
+    end
+    if Estimate_yp
+        xhat(count) = yp;
+        count = count + 1;
+    end
+    if Estimate_c
+        xhat(count) = c;
+        count = count + 1;
+    end    
+end
 end
