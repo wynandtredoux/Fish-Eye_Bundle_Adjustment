@@ -117,7 +117,7 @@ while deltasum > threshold
     disp(['Itteration ' num2str(count) ':']);
     %% build A and w matricies
     [Awerror, A, w, G] = BuildAwG(PHO, EXT, CNT, INT, xhat,...
-        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k);
+        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c);
     if Awerror == 1
         disp('Error building A and w');
         return
