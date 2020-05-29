@@ -1,14 +1,14 @@
 %% Build design matrix A, misclosure matrix w and inner constrains design matrix G
 function [error, A, misclosure, G] = BuildAwG(PHO,EXT,CNT,INT,xhat,... % data
-    BuildG, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c) % settings
+    BuildG, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Estimate_decent) % settings
 error = 0;
 % A should be an nxu matrix, w is nx1
 n = size(PHO,1)*2; % number of measurements
 numimg = size(EXT,1);
 numcam = size(INT,1)/2;
 u = size(xhat,1); % number of unknowns
-u_perimage = Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k;
-u_percam = Estimate_c + Estimate_xp + Estimate_yp;
+u_perimage = Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k; % unknowns per image
+u_percam = Estimate_c + Estimate_xp + Estimate_yp + Estimate_radial*5 + Estimate_decent*2; % unknowns per camera
 
 if BuildG
     d = 7; %number of inner constraints (X, Y, Z, w, p, k, and scale)
@@ -108,7 +108,7 @@ for i=1:length(PHO)
     Y = CNT{cnt_index,3};
     Z = CNT{cnt_index,4};
     
-    %% get IOPs from xhat or INT depending on settings
+    %% get IOPs and distortions from xhat or INT depending on settings
     % find correct camera in INT
     int_index = -1;
     for j = 1:2:length(INT)
@@ -126,7 +126,7 @@ for i=1:length(PHO)
     cam_num = (int_index + 1)/2; % camera number
     xhat_index_IOP = u_perimage*numimg + cam_num*u_percam-(u_percam-1); % rows in xhat where IOPs may be located
     xhat_count = 0;
-    
+    % IOPs
     if Estimate_xp == 1
         xp = xhat(xhat_index_IOP+xhat_count);
         xhat_count = xhat_count + 1;
@@ -141,10 +141,25 @@ for i=1:length(PHO)
     end
     if Estimate_c == 1
         c = xhat(xhat_index_IOP+xhat_count);
-        %xhat_count = xhat_count + 1;
+        xhat_count = xhat_count + 1;
     else    
         c = INT{int_index + 1,3};
-    end    
+    end
+    % distortions
+    if Estimate_radial == 1
+        K = [xhat(xhat_index_IOP+xhat_count:xhat_index_IOP+xhat_count+4)];
+        xhat_count = xhat_count + 5;
+    else    
+        K = [INT{int_index + 1,4:8}]';
+    end
+    if Estimate_decent == 1
+        P = [xhat(xhat_index_IOP+xhat_count:xhat_index_IOP+xhat_count+1)];
+        %xhat_count = xhat_count + 2;
+    else    
+        P = [INT{int_index + 1,9:10}]';
+    end
+    %k = [INT{i*2,4:8}]';
+    %P = [INT{i*2,9:10}]';
     
     % get y_axis_dir
     y_dir = INT{int_index,2};
@@ -161,9 +176,18 @@ for i=1:length(PHO)
     V = (Y - Yc)*(cos(k)*cos(w) - sin(k)*sin(p)*sin(w)) + (Z - Zc)*(cos(k)*sin(w) + cos(w)*sin(k)*sin(p)) - cos(p)*sin(k)*(X - Xc);
     W = sin(p)*(X - Xc) + cos(p)*cos(w)*(Z - Zc) - cos(p)*sin(w)*(Y - Yc);
     R = sqrt(U^2+V^2);
+    % radial distortions
+    x_bar = x_px-xp;
+    y_bar = y_px-yp;
+    r = sqrt((x_bar)^2 + (y_bar)^2);
+    delta_r = K(1)*r^2 + K(2)*r^4 + K(3)*r^6 + K(4)*r^8 + K(5)*r^10;
+    % decentering distortions
+    decentering_x = P(1)*(y_bar^2 + 3*x_bar^2) + 2*P(2)*x_bar*y_bar;
+    decentering_y = P(2)*(x_bar^2 + 3*y_bar^2) + 2*P(1)*x_bar*y_bar;
+    
     % fx fy
-    fx = -c*U/R*atan(R/W) + xp;
-    fy = -c*y_dir*V/R*atan(R/W) + yp;
+    fx = -c*U/R*atan(R/W) + xp + delta_r*(x_bar) + decentering_x;
+    fy = -c*y_dir*V/R*atan(R/W) + yp + delta_r*(y_bar) + decentering_y;
     
     % partial derivatives
     Ablock = zeros(2,u_perimage);
@@ -251,7 +275,7 @@ for i=1:length(PHO)
     % place Ablock so that the first element is at (Arow,Acol) in A
     A(Arow:Arow+1,Acol:Acol+u_perimage-1) = Ablock;
     
-    %% Build rows of A for IOPs
+    %% Build rows of A for IOPs and distortions
     % xp, yp, and c for each camera
     Ablock_IOPs = zeros(2,u_percam);
     count_A = 1;
@@ -269,7 +293,21 @@ for i=1:length(PHO)
         Ax_c = -(atan((((Y - Yc)*(cos(w)*sin(k) + cos(k)*sin(p)*sin(w)) + (Z - Zc)*(sin(k)*sin(w) - cos(k)*cos(w)*sin(p)) + cos(k)*cos(p)*(X - Xc))^2 + ((Y - Yc)*(cos(k)*cos(w) - sin(k)*sin(p)*sin(w)) + (Z - Zc)*(cos(k)*sin(w) + cos(w)*sin(k)*sin(p)) - cos(p)*sin(k)*(X - Xc))^2)^(1/2)/(sin(p)*(X - Xc) + cos(p)*cos(w)*(Z - Zc) - cos(p)*sin(w)*(Y - Yc)))*((Y - Yc)*(cos(w)*sin(k) + cos(k)*sin(p)*sin(w)) + (Z - Zc)*(sin(k)*sin(w) - cos(k)*cos(w)*sin(p)) + cos(k)*cos(p)*(X - Xc)))/(((Y - Yc)*(cos(w)*sin(k) + cos(k)*sin(p)*sin(w)) + (Z - Zc)*(sin(k)*sin(w) - cos(k)*cos(w)*sin(p)) + cos(k)*cos(p)*(X - Xc))^2 + ((Y - Yc)*(cos(k)*cos(w) - sin(k)*sin(p)*sin(w)) + (Z - Zc)*(cos(k)*sin(w) + cos(w)*sin(k)*sin(p)) - cos(p)*sin(k)*(X - Xc))^2)^(1/2);
         Ay_c = -(y_dir*atan((((Y - Yc)*(cos(w)*sin(k) + cos(k)*sin(p)*sin(w)) + (Z - Zc)*(sin(k)*sin(w) - cos(k)*cos(w)*sin(p)) + cos(k)*cos(p)*(X - Xc))^2 + ((Y - Yc)*(cos(k)*cos(w) - sin(k)*sin(p)*sin(w)) + (Z - Zc)*(cos(k)*sin(w) + cos(w)*sin(k)*sin(p)) - cos(p)*sin(k)*(X - Xc))^2)^(1/2)/(sin(p)*(X - Xc) + cos(p)*cos(w)*(Z - Zc) - cos(p)*sin(w)*(Y - Yc)))*((Y - Yc)*(cos(k)*cos(w) - sin(k)*sin(p)*sin(w)) + (Z - Zc)*(cos(k)*sin(w) + cos(w)*sin(k)*sin(p)) - cos(p)*sin(k)*(X - Xc)))/(((Y - Yc)*(cos(w)*sin(k) + cos(k)*sin(p)*sin(w)) + (Z - Zc)*(sin(k)*sin(w) - cos(k)*cos(w)*sin(p)) + cos(k)*cos(p)*(X - Xc))^2 + ((Y - Yc)*(cos(k)*cos(w) - sin(k)*sin(p)*sin(w)) + (Z - Zc)*(cos(k)*sin(w) + cos(w)*sin(k)*sin(p)) - cos(p)*sin(k)*(X - Xc))^2)^(1/2);
         Ablock_IOPs(:,count_A) = [Ax_c;Ay_c;];
-        %count_A = count_A + 1;
+        count_A = count_A + 1;
+    end
+    if Estimate_radial == 1
+        Ax_K = [r^2*x_bar r^4*x_bar r^6*x_bar r^8*x_bar r^10*x_bar];
+        Ay_K = [r^2*y_bar r^4*y_bar r^6*y_bar r^8*y_bar r^10*y_bar];
+        Ablock_IOPs(:,count_A:count_A+length(Ax_K)-1) = [Ax_K; Ay_K;];
+        count_A = count_A + length(Ax_K);
+    end
+    if Estimate_decent == 1
+        decentering_x = P(1)*(y_bar^2 + 3*x_bar^2) + 2*P(2)*x_bar*y_bar;
+    decentering_y = P(2)*(x_bar^2 + 3*y_bar^2) + 2*P(1)*x_bar*y_bar;
+        Ax_P = [(y_bar^2 + 3*x_bar^2) 2*x_bar*y_bar];
+        Ay_P = [2*x_bar*y_bar (x_bar^2 + 3*y_bar^2)];
+        Ablock_IOPs(:,count_A:count_A+length(Ax_P)-1) = [Ax_P; Ay_P;];
+        %count_A = count_A + length(Ax_P);
     end
     
     % Calculate Acol_IOP

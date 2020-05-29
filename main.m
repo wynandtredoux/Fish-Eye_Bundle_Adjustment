@@ -14,9 +14,9 @@ else
 end
 
 PHO = files{1}; % image measurements [pointID image xmm ymm]
-n = length(PHO)*2; % number of measurements, (x,y) for each line of PHO
+%n = length(PHO)*2; % number of measurements, (x,y) for each line of PHO
 EXT = files{2}; % EOPs [imageID CamreaID Xc Yc Zc omega phi kappa]
-u = size(EXT,1)*6; % number of unknowns, (Xc, Yc, Zc, omega, phi, kappa) for each image in EXT
+%u = size(EXT,1)*6; % number of unknowns, (Xc, Yc, Zc, omega, phi, kappa) for each image in EXT
 
 CNT = files{3}; % object coordinates [TargetID X Y Z]
 INT = files{4}; % IOPs [CameraID yaxis_dir xmin ymin xmax ymax]
@@ -25,22 +25,25 @@ INT = files{4}; % IOPs [CameraID yaxis_dir xmin ymin xmax ymax]
 %% Get settings from cfg file
 CFG = files{5};
 cfg_errors = 0;
-
+% General Settings
 [Iteration_Cap,cfg_errors] = findSetting(CFG,'Iteration_Cap',cfg_errors);
 [threshold,cfg_errors] = findSetting(CFG,'Threshold_Value',cfg_errors);
-
+% inner constraints
 [Inner_Constraints,cfg_errors] = findSetting(CFG,'Inner_Constraints',cfg_errors,1);
-
+% Estimate EOPs
 [Estimate_Xc,cfg_errors] = findSetting(CFG,'Estimate_Xc',cfg_errors,1);
 [Estimate_Yc,cfg_errors] = findSetting(CFG,'Estimate_Yc',cfg_errors,1);
 [Estimate_Zc,cfg_errors] = findSetting(CFG,'Estimate_Zc',cfg_errors,1);
 [Estimate_w,cfg_errors] = findSetting(CFG,'Estimate_Omega',cfg_errors,1);
 [Estimate_p,cfg_errors] = findSetting(CFG,'Estimate_Phi',cfg_errors,1);
 [Estimate_k,cfg_errors] = findSetting(CFG,'Estimate_Kappa',cfg_errors,1);
-
+% Estimate IOPs
 [Estimate_c,cfg_errors] = findSetting(CFG,'Estimate_c',cfg_errors,1);
 [Estimate_xp,cfg_errors] = findSetting(CFG,'Estimate_xp',cfg_errors,1);
 [Estimate_yp,cfg_errors] = findSetting(CFG,'Estimate_yp',cfg_errors,1);
+% Estimate Distortions
+[Estimate_radial,cfg_errors] = findSetting(CFG,'Estimate_Radial_Distortions',cfg_errors,1);
+[Estimate_decent,cfg_errors] = findSetting(CFG,'Estimate_Decentering_Distortions',cfg_errors,1);
 
 if cfg_errors>0
     disp ('Error getting settings')
@@ -91,16 +94,16 @@ for i = 1:2:size(INT,1)
     tmp(i,5) = {str2double(INT(i,5))};
     tmp(i,6) = {str2double(INT(i,6))};
     % row 2
-    tmp(i+1,1) = {str2double(INT(i+1,1))};
-    tmp(i+1,2) = {str2double(INT(i+1,2))};
-    tmp(i+1,3) = {str2double(INT(i+1,3))};
+    for j = 1:10
+        tmp(i+1,j) = {str2double(INT(i+1,j))};
+    end
 end
 INT = tmp;
 clear tmp
 %% Main Loop
-% initialize xhat (initial values for unknowns [Xc Yc Zc omeaga phi kappa], from EXT)
+% initialize xhat (initial values for unknowns [Xc Yc Zc omega phi kappa], from EXT)
 [xhaterror, xhat] = Buildxhat(EXT, INT, ... % data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_c, Estimate_xp, Estimate_yp); % settings
+    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_c, Estimate_xp, Estimate_yp, Estimate_radial, Estimate_decent); % settings
 if xhaterror == 1
     disp('Error building xhat');
     return
@@ -113,10 +116,10 @@ deltasumarr = [];
 % main loop
 while deltasum > threshold
     count = count + 1;
-    disp(['Itteration ' num2str(count) ':']);
-    %% build A and w matricies
+    disp(['Iteration ' num2str(count) ':']);
+    %% build A and w matrices
     [Awerror, A, w, G] = BuildAwG(PHO, EXT, CNT, INT, xhat,...
-        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c);
+        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Estimate_decent);
     if Awerror == 1
         disp('Error building A and w');
         return
@@ -144,7 +147,7 @@ while deltasum > threshold
     deltasumarr = [deltasumarr deltasum];
     % residuals
     %v = A*delta + w;
-    % constrain loop itterations
+    % constrain loop iterations
     if count >= Iteration_Cap
         disp('Iteration Cap reached. This can be changed in the .cfg file')
         break;
@@ -158,13 +161,13 @@ figure;
 hold on
 plot(1:length(deltasumarr),deltasumarr)
 title('normal of \delta over time')
-xlabel('Itteration')
+xlabel('Iteration')
 ylabel('normal value')
 
 % figure;
 % hold on
 % title('(X_c,Y_c,Z_c) over time')
-% xlabel('Itteration')
+% xlabel('Iteration')
 % ylabel('value')
 % X = repmat([1:size(xhat_arr,1)]',[1, 3]);
 % plot(X,xhat_arr(:,1:3))
@@ -172,7 +175,7 @@ ylabel('normal value')
 % figure;
 % hold on
 % title('(\omega,\phi,\kappa) over time')
-% xlabel('Itteration')
+% xlabel('Iteration')
 % ylabel('value')
 % plot(X,xhat_arr(:,4:end))
 % legend
