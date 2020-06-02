@@ -1,5 +1,5 @@
 % create the ux1 xhat vector from the .ext file
-function [error, xhat] = Buildxhat(EXT, INT, ... % data
+function [error, xhat] = Buildxhat(EXT, INT, TIE, CNT, ... % data
     Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Estimate_decent) % settings
 error = 0;
 numImg = size(EXT,1); % number of images
@@ -14,6 +14,8 @@ u = u + Estimate_w*numImg + Estimate_p*numImg + Estimate_k*numImg;
 u = u + Estimate_c*numCam + Estimate_xp*numCam + Estimate_yp*numCam;
 % radial distortion adds 5 unknowns per camera, and decentering distortion adds 2 per camera
 u = u + Estimate_radial*5*numCam + Estimate_decent*2*numCam;
+% tie points add 3 unknwons per point (X, Y, Z)
+u = u + size(TIE,1)*3;
 
 xhat = zeros(u,1);
 count = 1;
@@ -88,5 +90,34 @@ for i=1:numCam
             count = count + 1;
         end
     end    
+end
+
+% Tie points
+if size(TIE,1) > 0 % if TIE is not empty
+    for i=1:size(TIE,1)
+        % get tie point name from TIE
+        targetID = TIE(i);
+        % find initial coordinates from CNT
+        X = [];
+        Y = [];
+        Z = [];
+        for j=1:size(CNT,1)
+            if strcmp(targetID, CNT{j,1})
+                X = CNT{j,2};
+                Y = CNT{j,3};
+                Z = CNT{j,4};
+                break;
+            end
+        end
+        % if targetID's coordinates can't be found in CNT
+        if size(X,1) == 0 || size(Y,1) == 0 || size(Z,1) == 0
+            disp(['Error Buildxhat(): can''t find ' targetID ' from .tie in .cnt']);
+            error = 1;
+            return;
+        end
+        % add coordinates to xhat
+        xhat(count:count+2) = [X;Y;Z;];
+        count = count + 3;
+    end
 end
 end
