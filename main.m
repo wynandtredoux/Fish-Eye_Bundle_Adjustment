@@ -21,6 +21,7 @@ EXT = files{2}; % EOPs [imageID CamreaID Xc Yc Zc omega phi kappa]
 CNT = files{3}; % object coordinates [TargetID X Y Z]
 INT = files{4}; % IOPs [CameraID yaxis_dir xmin ymin xmax ymax]
 %                      [xp yp c]
+TIE = []; % list of tie point target IDs (read in later if needed)
 
 %% Get settings from cfg file
 CFG = files{5};
@@ -44,10 +45,22 @@ cfg_errors = 0;
 % Estimate Distortions
 [Estimate_radial,cfg_errors] = findSetting(CFG,'Estimate_Radial_Distortions',cfg_errors,1);
 [Estimate_decent,cfg_errors] = findSetting(CFG,'Estimate_Decentering_Distortions',cfg_errors,1);
+% Estimate Ground Coordinates of tie points
+[Estimate_tie,cfg_errors] = findSetting(CFG,'Estimate_tie',cfg_errors,1);
 
 if cfg_errors>0
     disp ('Error getting settings')
     return
+end
+
+%% Read in tie point list if needed
+if Estimate_tie
+    [filereaderror, files] = ReadFiles({'.tie'});
+    if filereaderror == 1
+        disp ('Error reading files')
+        return
+    end
+    TIE = files{1};
 end
 
 %% Convert files from String to Cell
@@ -101,8 +114,8 @@ end
 INT = tmp;
 clear tmp
 %% Main Loop
-% initialize xhat (initial values for unknowns [Xc Yc Zc omega phi kappa], from EXT)
-[xhaterror, xhat] = Buildxhat(EXT, INT, ... % data
+% initialize xhat (initial values for unknowns)
+[xhaterror, xhat] = Buildxhat(EXT, INT, TIE, CNT, ... % data
     Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_c, Estimate_xp, Estimate_yp, Estimate_radial, Estimate_decent); % settings
 if xhaterror == 1
     disp('Error building xhat');
@@ -118,7 +131,7 @@ while deltasum > threshold
     count = count + 1;
     disp(['Iteration ' num2str(count) ':']);
     %% build A and w matrices
-    [Awerror, A, w, G] = BuildAwG(PHO, EXT, CNT, INT, xhat,...
+    [Awerror, A, w, G] = BuildAwG(PHO, EXT, CNT, INT, TIE, xhat,...
         Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Estimate_decent);
     if Awerror == 1
         disp('Error building A and w');

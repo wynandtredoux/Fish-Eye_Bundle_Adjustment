@@ -14,7 +14,7 @@ u = u + Estimate_w*numImg + Estimate_p*numImg + Estimate_k*numImg;
 u = u + Estimate_c*numCam + Estimate_xp*numCam + Estimate_yp*numCam;
 % radial distortion adds 5 unknowns per camera, and decentering distortion adds 2 per camera
 u = u + Estimate_radial*5*numCam + Estimate_decent*2*numCam;
-% tie points add 3 unknwons per point (X, Y, Z)
+% tie points add 3 unknowns per point (X, Y, Z)
 u = u + size(TIE,1)*3;
 
 xhat = zeros(u,1);
