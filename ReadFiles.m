@@ -30,12 +30,14 @@ for i=1:length(files)
    elseif length(dirfiles)<1 % if no file is found
        answer = questdlg(['No ' file ' in current directory. Would you like to browse for it in another location?'],['No ' file], 'Yes','Cancel','Yes');
        if strcmp(answer,'Cancel')
-           %disp("TERMINATE");
+           disp(['Error on ' file]);
            terminate = 1;
            break;
        else
+           oldfile = file;
            [file, path] = uigetfile(strcat('*',file),['Select ' file]);
            if file == 0
+               disp(['Error on ' oldfile]);
                terminate = 1;
                break;
            end
