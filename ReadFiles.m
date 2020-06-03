@@ -15,13 +15,12 @@ terminate  = 0;
     % .INT: Interior orientation parameters
         % format: Camera y_axis_dir x_min y_min x_max y_max
         %         xp yp c
-    % .CFG: Defines verious optional parameters for the program
-    % .Defaultcfg: Default cfg options that can be overwritten by options in .CFG
+    % .CFG: Defines various optional parameters for the program
     
 % read in .pho .ext .cnt .int
 for i=1:length(files)
    file = files{i};
-   % get filepath for current file
+   % get file path for current file
    dirfiles = dir(strcat('*',file));
    if length(dirfiles)>1 % if more than 1 file is found
        error = errordlg(['Error: multiple files with ' file ' extension, please select 1 to use'],['Too many ' file ' files']);
