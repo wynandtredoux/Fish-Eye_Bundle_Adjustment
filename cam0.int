@@ -1,2 +1,4 @@
+#	CameraID	ydir	xmin	ymin	xmax	ymax
+#	xp				yp				c			k1			k2		k3		k4		k5		P1		P2
            0    -1          0.000          0.000       2448.000       2048.000
        1207.903       1013.724       1234.758       0       0       0       0       0       0       0
