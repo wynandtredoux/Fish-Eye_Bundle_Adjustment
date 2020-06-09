@@ -44,6 +44,7 @@ cfg_errors = 0;
 [Estimate_yp,cfg_errors] = findSetting(CFG,'Estimate_yp',cfg_errors,1);
 % Estimate Distortions
 [Estimate_radial,cfg_errors] = findSetting(CFG,'Estimate_Radial_Distortions',cfg_errors,1);
+[Num_Radial_Distortions,cfg_errors] = findSetting(CFG,'Num_Radial_Distortions',cfg_errors);
 [Estimate_decent,cfg_errors] = findSetting(CFG,'Estimate_Decentering_Distortions',cfg_errors,1);
 % Estimate Ground Coordinates of tie points
 [Estimate_tie,cfg_errors] = findSetting(CFG,'Estimate_tie',cfg_errors,1);
@@ -107,7 +108,7 @@ for i = 1:2:size(INT,1)
     tmp(i,5) = {str2double(INT(i,5))};
     tmp(i,6) = {str2double(INT(i,6))};
     % row 2
-    for j = 1:10
+    for j = 1:(5+Num_Radial_Distortions)
         tmp(i+1,j) = {str2double(INT(i+1,j))};
     end
 end
@@ -116,7 +117,7 @@ clear tmp
 %% Main Loop
 % initialize xhat (initial values for unknowns)
 [xhaterror, xhat] = Buildxhat(EXT, INT, TIE, CNT, ... % data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_c, Estimate_xp, Estimate_yp, Estimate_radial, Estimate_decent); % settings
+    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_c, Estimate_xp, Estimate_yp, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
 if xhaterror == 1
     disp('Error building xhat');
     return
@@ -131,8 +132,8 @@ while deltasum > threshold
     count = count + 1;
     disp(['Iteration ' num2str(count) ':']);
     %% build A and w matrices
-    [Awerror, A, w, G] = BuildAwG(PHO, EXT, CNT, INT, TIE, xhat,...
-        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Estimate_decent);
+    [Awerror, A, w, G, dist_scaling] = BuildAwG(PHO, EXT, CNT, INT, TIE, xhat,...
+        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent);
     if Awerror == 1
         disp('Error building A and w');
         return
@@ -153,6 +154,30 @@ while deltasum > threshold
     else  
         delta = -(N)^-1*u;
     end
+    
+    % scale distortion parameters in delta with values from dist_scaling
+    % for each camera
+    for i = 1:size(dist_scaling,1)
+        % radial distortion
+        if Estimate_radial
+            % get radial distortion index
+            radial_index = dist_scaling(i,1);
+            % scale paramaters
+            for j = 1:Num_Radial_Distortions
+                delta(radial_index+j-1) = delta(radial_index+j-1)/dist_scaling(i,j+2);
+            end
+        end
+        % decentering distortion
+        if Estimate_decent
+            % get decentering distortion index
+            decent_index = dist_scaling(i,2);
+            % scale P1
+            delta(decent_index) = delta(decent_index)/dist_scaling(i,3);
+            % scale P2
+            delta(decent_index+1) = delta(decent_index+1)/dist_scaling(i,3);
+        end
+    end
+    
     xhat = xhat + delta;
     xhat_arr = [xhat_arr; xhat';];
         
