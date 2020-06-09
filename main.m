@@ -201,19 +201,3 @@ plot(1:length(deltasumarr),deltasumarr)
 title('normal of \delta over time')
 xlabel('Iteration')
 ylabel('normal value')
-
-% figure;
-% hold on
-% title('(X_c,Y_c,Z_c) over time')
-% xlabel('Iteration')
-% ylabel('value')
-% X = repmat([1:size(xhat_arr,1)]',[1, 3]);
-% plot(X,xhat_arr(:,1:3))
-% legend
-% figure;
-% hold on
-% title('(\omega,\phi,\kappa) over time')
-% xlabel('Iteration')
-% ylabel('value')
-% plot(X,xhat_arr(:,4:end))
-% legend
