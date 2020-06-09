@@ -46,7 +46,7 @@ for i=1:length(files)
        filepath = dirfiles.name;
    end
    % read in file
-    input = readmatrix(filepath,'FileType','text','NumHeaderLines',0,'Delimiter',{' ','\t'},'ConsecutiveDelimitersRule','join','LeadingDelimitersRule','ignore','OutputType','string','CommentStyle','#*');
+    input = readmatrix(filepath,'FileType','text','NumHeaderLines',0,'Delimiter',{' ','\t'},'ConsecutiveDelimitersRule','join','LeadingDelimitersRule','ignore','OutputType','string','CommentStyle','#');
     filecontents(i,1) = {input};
 end
 end
