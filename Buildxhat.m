@@ -1,6 +1,6 @@
 % create the ux1 xhat vector from the .ext file
 function [error, xhat] = Buildxhat(EXT, INT, TIE, CNT, ... % data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent) % settings
+    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Estimate_decent) % settings
 error = 0;
 numImg = size(EXT,1); % number of images
 numCam = size(INT,1)/2;% number of cameras
@@ -12,8 +12,8 @@ u = u + Estimate_Xc*numImg + Estimate_Yc*numImg + Estimate_Zc*numImg;
 u = u + Estimate_w*numImg + Estimate_p*numImg + Estimate_k*numImg;
 % c, xp, and yp add 1 unknown per camera each
 u = u + Estimate_c*numCam + Estimate_xp*numCam + Estimate_yp*numCam;
-% radial distortion adds Num_Radial_Distortions unknowns per camera, and decentering distortion adds 2 per camera
-u = u + Estimate_radial*Num_Radial_Distortions*numCam + Estimate_decent*2*numCam;
+% radial distortion adds 5 unknowns per camera, and decentering distortion adds 2 per camera
+u = u + Estimate_radial*5*numCam + Estimate_decent*2*numCam;
 % tie points add 3 unknowns per point (X, Y, Z)
 u = u + size(TIE,1)*3;
 
@@ -61,8 +61,8 @@ for i=1:numCam
     yp = INT{i*2,2};
     c = INT{i*2,3};
     
-    k = [INT{i*2,4:4+Num_Radial_Distortions-1}]';
-    p = [INT{i*2,4+Num_Radial_Distortions:5+Num_Radial_Distortions}]';
+    k = [INT{i*2,4:8}]';
+    p = [INT{i*2,9:10}]';
     
     % IOPs
     if Estimate_xp

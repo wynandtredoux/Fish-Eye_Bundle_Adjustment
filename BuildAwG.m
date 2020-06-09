@@ -1,27 +1,15 @@
 %% Build design matrix A, misclosure matrix w and inner constrains design matrix G
-function [error, A, misclosure, G, dist_scaling] = BuildAwG(PHO,EXT,CNT,INT,TIE,xhat,... % data
-    BuildG, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent) % settings
+function [error, A, misclosure, G] = BuildAwG(PHO,EXT,CNT,INT,TIE,xhat,... % data
+    BuildG, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Estimate_decent) % settings
 %% Setup
 error = 0;
-% Num_Radial_Distortions must always be at least 1
-if Num_Radial_Distortions<1
-    Num_Radial_Distortions = 1;
-end
-
 % A should be an nxu matrix, w is nx1
 n = size(PHO,1)*2; % number of measurements
 numimg = size(EXT,1);
 numcam = size(INT,1)/2;
 u = size(xhat,1); % number of unknowns
 u_perimage = Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k; % unknowns per image
-u_percam = Estimate_c + Estimate_xp + Estimate_yp + Estimate_radial*Num_Radial_Distortions + Estimate_decent*2; % unknowns per camera
-
-% matrix dist_scaling is created to keep track of all the scale factors for the distortions of each camera
-% dist_scaling = [(xhat index for radial)(xhat index for decentering)(scale1)(scale2)(scale3)...] <- Cam0
-%                [(xhat index for radial)(xhat index for decentering)(scale1)(scale2)(scale3)...] <- Cam1
-%                ...
-% Where scale = rmax^2*i
-dist_scaling = zeros(numcam,2+Num_Radial_Distortions);
+u_percam = Estimate_c + Estimate_xp + Estimate_yp + Estimate_radial*5 + Estimate_decent*2; % unknowns per camera
 
 if BuildG
     d = 7; %number of inner constraints (X, Y, Z, w, p, k, and scale)
@@ -177,31 +165,21 @@ for i=1:length(PHO)
     else    
         c = INT{int_index + 1,3};
     end
-    
     % distortions
     if Estimate_radial == 1
-        % find radial distortions in xhat
-        xhat_index_radial = xhat_index_IOP + xhat_count;
-        K = [xhat(xhat_index_radial:xhat_index_radial+Num_Radial_Distortions-1)];
-        % add xhat index to dist_scaling matrix
-        dist_scaling(cam_num,1) = xhat_index_radial;
-        
-        xhat_count = xhat_count + Num_Radial_Distortions;
-    else
-        % get radial distortion from INT
+        K = [xhat(xhat_index_IOP+xhat_count:xhat_index_IOP+xhat_count+4)];
+        xhat_count = xhat_count + 5;
+    else    
         K = [INT{int_index + 1,4:8}]';
     end
     if Estimate_decent == 1
-        % find decentering distortions in xhat
-        xhat_index_decent = xhat_index_IOP + xhat_count;
-        P = [xhat(xhat_index_decent:xhat_index_decent+1)];
-        % add xhat index to dist_scaling matrix
-        dist_scaling(cam_num,2) = xhat_index_decent;
-        
+        P = [xhat(xhat_index_IOP+xhat_count:xhat_index_IOP+xhat_count+1)];
         %xhat_count = xhat_count + 2;
     else    
         P = [INT{int_index + 1,9:10}]';
     end
+    %k = [INT{i*2,4:8}]';
+    %P = [INT{i*2,9:10}]';
     
     % get y_axis_dir
     y_dir = INT{int_index,2};
@@ -222,11 +200,7 @@ for i=1:length(PHO)
     x_bar = x_px-xp;
     y_bar = y_px-yp;
     r = sqrt((x_bar)^2 + (y_bar)^2);
-    delta_r = 0;
-    for j = 1:length(K)
-        delta_r = delta_r + K(j)*r^(2*j);
-    end
-    %delta_r = K(1)*r^2 + K(2)*r^4 + K(3)*r^6 + K(4)*r^8 + K(5)*r^10;
+    delta_r = K(1)*r^2 + K(2)*r^4 + K(3)*r^6 + K(4)*r^8 + K(5)*r^10;
     % decentering distortions
     decentering_x = P(1)*(y_bar^2 + 3*x_bar^2) + 2*P(2)*x_bar*y_bar;
     decentering_y = P(2)*(x_bar^2 + 3*y_bar^2) + 2*P(1)*x_bar*y_bar;
@@ -341,34 +315,17 @@ for i=1:length(PHO)
         Ablock_IOPs(:,count_A) = [Ax_c;Ay_c;];
         count_A = count_A + 1;
     end
-    
-    % Distortion partial derivatives must be scaled to avoid poor conditioning of the normal equations matrix
-    % calculate max possible radial distortion rmax
-    xmin = INT{int_index,3};
-    ymin = INT{int_index,4};
-    xmax = INT{int_index,5};
-    ymax = INT{int_index,6};
-    rmax = sqrt(((xmax-xmin)*0.5)^2+((ymax-ymin)*0.5)^2);
-    % calculate scale facors
-    for j = 1:Num_Radial_Distortions
-        dist_scaling(cam_num,2+j) = rmax^(2*j);
-    end
-    
     if Estimate_radial == 1
-        Ax_K = zeros(1,Num_Radial_Distortions);
-        Ay_K = zeros(1,Num_Radial_Distortions);
-        for j=1:Num_Radial_Distortions
-            % calculate partial derivative with scale factor
-            Ax_K(1,j) = r^(2*j)*x_bar/dist_scaling(cam_num,2+j);
-            Ay_K(1,j) = r^(2*j)*y_bar/dist_scaling(cam_num,2+j);
-        end        
+        Ax_K = [r^2*x_bar r^4*x_bar r^6*x_bar r^8*x_bar r^10*x_bar];
+        Ay_K = [r^2*y_bar r^4*y_bar r^6*y_bar r^8*y_bar r^10*y_bar];
         Ablock_IOPs(:,count_A:count_A+length(Ax_K)-1) = [Ax_K; Ay_K;];
         count_A = count_A + length(Ax_K);
     end
     if Estimate_decent == 1
-        % calculate partial derivative with scale factor
-        Ax_P = [(y_bar^2 + 3*x_bar^2) 2*x_bar*y_bar]./dist_scaling(cam_num,3);
-        Ay_P = [2*x_bar*y_bar (x_bar^2 + 3*y_bar^2)]./dist_scaling(cam_num,3);
+        %decentering_x = P(1)*(y_bar^2 + 3*x_bar^2) + 2*P(2)*x_bar*y_bar;
+        %decentering_y = P(2)*(x_bar^2 + 3*y_bar^2) + 2*P(1)*x_bar*y_bar;
+        Ax_P = [(y_bar^2 + 3*x_bar^2) 2*x_bar*y_bar];
+        Ay_P = [2*x_bar*y_bar (x_bar^2 + 3*y_bar^2)];
         Ablock_IOPs(:,count_A:count_A+length(Ax_P)-1) = [Ax_P; Ay_P;];
         %count_A = count_A + length(Ax_P);
     end
