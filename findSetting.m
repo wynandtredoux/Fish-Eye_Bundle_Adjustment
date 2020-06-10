@@ -15,7 +15,17 @@ settingfound = false;
 for i=1:size(CFG,1)
     if strcmp(CFG(i,1),str)
         settingfound = true;
-        value = str2double(CFG(i,2));
+        str_value = CFG{i,2};
+        
+        % if value is text
+        if str_value(1) == "'" && str_value(end) == "'"
+            % get text without quotes
+            value = str_value(2:end-1);
+        % if value is numeric
+        else        
+            value = str2double(str_value);
+        end
+        break;
     end
 end
 
@@ -29,7 +39,7 @@ end
 % check for NaN
 if isnan(value)
     error_tally = error_tally + 1;
-    disp(['Error:findSetting() ' str ' cannot be NaN. This may be caused by an invalid setting value (setting values must contain numbers only)']);
+    disp(['Error:findSetting() ' str ' cannot be NaN. This may be caused by an invalid setting value (most setting values must contain numbers only)']);
     return
 end
 

@@ -4,6 +4,9 @@ clear all
 close all
 format longg
 clc
+
+tic %start time
+date = char(datetime); %date
 %% read in files
 [filereaderror, files] = ReadFiles({'.pho','.ext','.cnt','.int','.cfg'});
 if filereaderror == 1
@@ -25,6 +28,14 @@ TIE = []; % list of tie point target IDs (read in later if needed)
 
 %% Get settings from cfg file
 CFG = files{5};
+
+% get output filename (is allowed to error without exiting the program)
+cfg_errors = 0;
+[Output_Filename,cfg_errors] = findSetting(CFG,'Output_Filename',cfg_errors);
+if cfg_errors>0 % default filename if none is provided
+    Output_Filename = 'output.out';
+end
+
 cfg_errors = 0;
 % General Settings
 [Iteration_Cap,cfg_errors] = findSetting(CFG,'Iteration_Cap',cfg_errors);
@@ -191,13 +202,90 @@ while deltasum > threshold
         break;
     end
 end
+% end time
+time = num2str(toc);
+disp(['Elapsed time is ' char(time) ' seconds.'])
 
-disp('Done!');
-%xhat
 
+
+% plot normal of delta over time
 figure;
 hold on
 plot(1:length(deltasumarr),deltasumarr)
 title('normal of \delta over time')
 xlabel('Iteration')
 ylabel('normal value')
+
+%% Create output file
+padding = 4;
+disp('Writing output file...');
+line = '*************************************************************************************************************';
+% get git version
+[gite, version] = system('git describe --dirty');
+if gite>0
+    disp('Error: could not get git verion with "git describe"')
+    version = 'Unknown';
+end
+
+% create output file
+fileID = fopen(Output_Filename,'w');
+
+% heading
+fprintf(fileID,['Version: ' version]);
+fprintf(fileID,'Fish-eye model Bundle Adjustment\nWynand Tredoux -- University of Calgary -- 2020\n\n');
+fprintf(fileID,line);
+fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' seconds']);
+
+% settings used
+fprintf(fileID,'\n\nSettings used:\n');
+tmp = [{'Iteration_Cap'} 	{num2str(Iteration_Cap)}
+{'Threshold_Value'}	{num2str(threshold)}
+{'Inner_Constraints'}	{num2str(Inner_Constraints)}
+{'Estimate_Xc'}	{num2str(Estimate_Xc)}
+{'Estimate_Yc'}	{num2str(Estimate_Yc)}
+{'Estimate_Zc'}	{num2str(Estimate_Zc)}
+{'Estimate_Omega'}	{num2str(Estimate_w)}
+{'Estimate_Phi'}	{num2str(Estimate_p)}
+{'Estimate_Kappa'}	{num2str(Estimate_k)}
+{'Estimate_c'}	{num2str(Estimate_c)}
+{'Estimate_xp'}	{num2str(Estimate_xp)}
+{'Estimate_yp'}	{num2str(Estimate_yp)}
+{'Estimate_Radial_Distortions'}	{num2str(Estimate_radial)}
+{'Num_Radial_Distortions'}	{num2str(Num_Radial_Distortions)}
+{'Estimate_tie'}	{num2str(Estimate_tie)}];
+
+printCell(fileID, tmp, '\t\t', padding);
+fprintf(fileID, ['\n' line '\n']);
+
+% Summery of unknowns/observations
+fprintf(fileID, '\nObservations/Unknowns Summery\n\n');
+
+tmp = [{'Number of Photos'}	{num2str(size(EXT,1))}
+{'Total EOP unknowns'}	{num2str((Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k)*size(EXT,1))}
+{'Number of Cameras'}	{num2str(size(INT,1)/2)}
+{'Total IOP unknowns'}	{num2str((Estimate_c + Estimate_xp + Estimate_yp)*size(INT,1)/2)}
+{'Total distortion unknowns'}	{num2str((Estimate_radial*Num_Radial_Distortions + Estimate_decent*2)*size(INT,1)/2)}
+{'Number of control points'}	{num2str(size(CNT,1))}
+{'Number of tie/control points to be estimated'}	{num2str(size(TIE,1))}
+{'Number of control/tie point unknowns'}	{num2str(size(TIE,1)*3)}
+{'\line'}	{''}
+{'Total Unknowns'}	{num2str(length(xhat))}
+{'\n'}	{''}
+{'Number of image points'}	{num2str(size(PHO,1))}
+{'Total number of observations'}	{num2str(size(PHO,1)*2)}
+{'Number of Inner Constraints'}	{num2str(7*Inner_Constraints)}
+{'\line'}	{''}
+{'Total Number of Observations'}	{num2str(size(PHO,1)*2 + 7*Inner_Constraints)}
+{'\n'}	{''}
+{'Total Degrees of Freedom'}	{num2str((size(PHO,1)*2 + 7*Inner_Constraints) - length(xhat))}
+{'\n'}	{''}];
+
+printCell(fileID, tmp, '', padding);
+
+fprintf(fileID, ['\n' line '\n']);
+
+% EOPs
+
+% close file
+fclose(fileID);
+disp('Done!');
