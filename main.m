@@ -153,17 +153,23 @@ while deltasum > threshold
     %% Calculate solution
     u = A'*w;
     N = A'*A;
+    Cx = [];
     
     if Inner_Constraints
         NG = [N G;
             G' zeros(size(G,2));];
         uG = [u; zeros(size(G,2),1);];
-
-        delta_k = -NG^-1*uG;
+        Cx = NG^-1;
+        
+        % seperate k and delta
+        delta_k = -Cx*uG;
         delta = delta_k(1:size(u,1),:);
         k = delta_k(size(u,1)+1:end,:);
-    else  
-        delta = -(N)^-1*u;
+        % seperate Cx into only the unknowns part
+        Cx = Cx(1:size(A,2),1:size(A,2));
+    else
+        Cx = N^-1;
+        delta = -Cx*u;
     end
     
     % scale distortion parameters in delta with values from dist_scaling
@@ -234,7 +240,7 @@ fileID = fopen(Output_Filename,'w');
 fprintf(fileID,['Version: ' version]);
 fprintf(fileID,'Fish-eye model Bundle Adjustment\nWynand Tredoux -- University of Calgary -- 2020\n\n');
 fprintf(fileID,line);
-fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' seconds']);
+fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' seconds\nIterations:\t\t' num2str(count)]);
 
 % settings used
 fprintf(fileID,'\n\nSettings used:\n');
@@ -282,10 +288,74 @@ tmp = [{'Number of Photos'}	{num2str(size(EXT,1))}
 
 printCell(fileID, tmp, '', padding);
 
-fprintf(fileID, ['\n' line '\n']);
+fprintf(fileID, [line '\n\n']);
 
-% EOPs
+% Estimated EOPs for each image
+decimals = '5';
+width = '14';
+fprintf(fileID, 'Estimated EOPs\n');
+%u_perimage = Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k; %unknowns per image
 
+xhat_count = 1;
+for i = 1:size(EXT,1) % for each image
+    imageID = EXT{i,1};
+    count = countImagePoints(imageID,PHO);
+    fprintf(fileID,'\n');
+    tmp = [{'Image'} {imageID}
+        {'Camera'} {EXT{i,2}}
+        {'Number of image points'} {num2str(count)}
+        {'\line'} {''}];
+    printCell(fileID, tmp, '', padding);
+    
+    % Xc
+    if Estimate_Xc
+        %fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f\n'),'Xc',xhat(xhat_count),Cx(xhat_count,xhat_count));
+        printEOP(fileID,'Xc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    % Yc
+    if Estimate_Yc
+        printEOP(fileID,'Yc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    % Xc
+    if Estimate_Zc
+        printEOP(fileID,'Zc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    % orentation angles need to be converted to degrees form radians
+    % w
+    if Estimate_w
+        printEOP(fileID,'Omeaga',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    % p
+    if Estimate_p
+        printEOP(fileID,'Phi',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    % k
+    if Estimate_k
+        printEOP(fileID,'Kappa',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
+        xhat_count = xhat_count + 1;
+    end    
+end
+        
+    
 % close file
 fclose(fileID);
 disp('Done!');
+
+% small functions not worth putting in their own files
+function printEOP(fileID,name,value,std,width,decimals)
+fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f\n'),name,value,std);
+end
+
+function count = countImagePoints(imageID,PHO)
+count = 0;
+for i=1:size(PHO,1)
+    if strcmp(PHO{i,2},imageID)
+        count = count + 1;
+    end
+end
+end
