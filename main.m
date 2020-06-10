@@ -340,7 +340,40 @@ for i = 1:size(EXT,1) % for each image
         xhat_count = xhat_count + 1;
     end    
 end
-        
+
+% Estimates for IOPs and distortions for each camera
+fprintf(fileID,['\n' line '\n\nEstimated IOPs and Distortions for each Camera\n\n']);
+
+for i = size(INT,1)/2 % for each camera
+    cameraID = INT{i*2-1,1};
+    tmp = [{'Camera'} {cameraID}
+        {'\line'} {''}];
+    printCell(fileID, tmp, '', padding);
+    if Estimate_c
+        printEOP(fileID,'c',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    if Estimate_xp
+        printEOP(fileID,'xp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    if Estimate_yp
+        printEOP(fileID,'yp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    if Estimate_radial
+        for j = 1:Num_Radial_Distortions
+            printDist(fileID,strcat('k',num2str(j)),xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+            xhat_count = xhat_count + 1;
+        end
+    end
+    if Estimate_decent
+        for j = 1:2
+            printDist(fileID,strcat('p',num2str(j)),xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+            xhat_count = xhat_count + 1;
+        end
+    end
+end
     
 % close file
 fclose(fileID);
@@ -349,6 +382,9 @@ disp('Done!');
 % small functions not worth putting in their own files
 function printEOP(fileID,name,value,std,width,decimals)
 fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f\n'),name,value,std);
+end
+function printDist(fileID,name,value,std,width,decimals)
+fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'e%3$-',width,'.',decimals,'e\n'),name,value,std);
 end
 
 function count = countImagePoints(imageID,PHO)
