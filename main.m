@@ -226,10 +226,11 @@ ylabel('normal value')
 padding = 4;
 disp('Writing output file...');
 line = '*************************************************************************************************************';
-% get git version
-[gite, version] = system('git describe --dirty');
+% get version of code using the "git describe" command
+[gite, version] = system('git describe --dirty'); % "dirty" indicates that the local version has been modified and doesn't fully match the version on github
 if gite>0
     disp('Error: could not get git verion with "git describe"')
+    disp('Version will be set to "unknown"');
     version = 'Unknown';
 end
 
