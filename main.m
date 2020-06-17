@@ -230,7 +230,11 @@ xlabel('Iteration')
 ylabel('normal value')
 
 %% Residuals
-% get x,y residuals for all image measurements
+% calculate x,y residuals for all image measurements
+v = A*delta + w;
+% build RSD with the format point_id image _id x_obs y_obs radial_dist v_x v_y v_r v_t
+RSD = BuildRSD(v,PHO,EXT,INT,xhat,... %data
+    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
 
 
 %% Create output file
@@ -370,16 +374,16 @@ for i = 1:size(INT,1)/2 % for each camera
     tmp = [{'Camera'} {cameraID}
         {'\line'} {''}];
     printCell(fileID, tmp, '', padding);
-    if Estimate_c
-        printEOP(fileID,'c',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
-        xhat_count = xhat_count + 1;
-    end
     if Estimate_xp
         printEOP(fileID,'xp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         xhat_count = xhat_count + 1;
     end
     if Estimate_yp
         printEOP(fileID,'yp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        xhat_count = xhat_count + 1;
+    end
+    if Estimate_c
+        printEOP(fileID,'c',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         xhat_count = xhat_count + 1;
     end
     if Estimate_radial
