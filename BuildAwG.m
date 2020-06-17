@@ -3,7 +3,7 @@ function [error, A, misclosure, G, dist_scaling] = BuildAwG(PHO,EXT,CNT,INT,TIE,
     BuildG, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent) % settings
 %% Setup
 error = 0;
-Use_Collinearity = 0;
+Use_Collinearity = 0; % Functionality was added to use collinearity equations instead of fish-eye. This variable enables/disables that code
 % Num_Radial_Distortions must always be at least 1
 if Num_Radial_Distortions<1
     Num_Radial_Distortions = 1;
