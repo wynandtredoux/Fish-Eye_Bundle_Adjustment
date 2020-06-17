@@ -230,6 +230,7 @@ xlabel('Iteration')
 ylabel('normal value')
 
 %% Residuals
+% get x,y residuals for all image measurements
 
 
 %% Create output file
@@ -399,12 +400,13 @@ end
 fprintf(fileID,['\n' line '\n\nEstimated Ground Coordinates of targets\nTargetID\tX\tY\tZ\tstdX\tstdY\tstdZ\n\n']);
 for i = 1:size(TIE,1) % for each tie point/target
     targetID = TIE(i); % get target name
+    numImages = countTargetImages(targetID,PHO); % get number of images for target
     XYZ = xhat(xhat_count:xhat_count+2); % get estimated XYZ form xhat
     stdxyz = zeros(3,1);
     for j = 1:3 % get estimated standard deviations of XYZ from Cxhat
         stdxyz(j) = sqrt(Cx(xhat_count+j-1,xhat_count+j-1));
     end
-    printTIE(fileID,targetID,XYZ,stdxyz,width,decimals); % print to output file
+    printTIE(fileID,targetID,numImages,XYZ,stdxyz,width,decimals); % print to output file
     xhat_count = xhat_count + 3;    
 end
     
@@ -419,13 +421,21 @@ end
 function printDist(fileID,name,value,std,width,decimals)
 fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'e%3$-',width,'.',decimals,'e\n'),name,value,std);
 end
-function printTIE(fileID,targetID,XYZ,stdxyz,width,decimals)
-fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f%5$-',width,'.',decimals,'f%6$-',width,'.',decimals,'f%7$-',width,'.',decimals,'f\n'),targetID,XYZ(1),XYZ(2),XYZ(3),stdxyz(1),stdxyz(2),stdxyz(3));
+function printTIE(fileID,targetID,numImages,XYZ,stdxyz,width,decimals)
+fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.','0','i%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f%5$-',width,'.',decimals,'f%6$-',width,'.',decimals,'f%7$-',width,'.',decimals,'f%8$-',width,'.',decimals,'f\n'),targetID,numImages,XYZ(1),XYZ(2),XYZ(3),stdxyz(1),stdxyz(2),stdxyz(3));
 end
 function count = countImagePoints(imageID,PHO)
 count = 0;
 for i=1:size(PHO,1)
     if strcmp(PHO{i,2},imageID)
+        count = count + 1;
+    end
+end
+end
+function count = countTargetImages(targetID,PHO)
+count = 0;
+for i=1:size(PHO,1)
+    if strcmp(PHO{i,1},targetID)
         count = count + 1;
     end
 end
