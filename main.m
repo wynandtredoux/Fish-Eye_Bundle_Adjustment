@@ -236,6 +236,15 @@ v = A*delta + w;
 RSD = BuildRSD(v,PHO,EXT,INT,xhat,... %data
     Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
 
+% create plot of radial component of the residuals - RSD(:,8) - as a function of radial distance - RSD(:,5)
+tmp = [[RSD{:,5}]' [RSD{:,8}]']; % get r and v_r from RSD
+tmp = sortrows(tmp); % sort by radial distance in ascending order
+figure;
+hold on
+plot(tmp(:,1),tmp(:,2));
+title('radial component of the residuals v_r as a function of radial distance r')
+xlabel('radial distance r')
+ylabel('radial component of the residuals v_r')
 
 %% Create output file
 padding = 4;
