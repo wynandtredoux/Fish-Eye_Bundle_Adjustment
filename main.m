@@ -135,7 +135,7 @@ clear tmp
 %% Main Loop
 % initialize xhat (initial values for unknowns)
 [xhaterror, xhat] = Buildxhat(EXT, INT, TIE, CNT, ... % data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_c, Estimate_xp, Estimate_yp, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
+    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
 if xhaterror == 1
     disp('Error building xhat');
     return
@@ -237,11 +237,10 @@ RSD = BuildRSD(v,PHO,EXT,INT,xhat,... %data
     Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
 
 % create plot of radial component of the residuals - RSD(:,8) - as a function of radial distance - RSD(:,5)
-tmp = [[RSD{:,5}]' [RSD{:,8}]']; % get r and v_r from RSD
-tmp = sortrows(tmp); % sort by radial distance in ascending order
+%tmp = [[RSD{:,5}]' [RSD{:,8}]']; % get r and v_r from RSD
 figure;
 hold on
-plot(tmp(:,1),tmp(:,2));
+scatter([RSD{:,5}],[RSD{:,8}]);
 title('radial component of the residuals v_r as a function of radial distance r')
 xlabel('radial distance r')
 ylabel('radial component of the residuals v_r')
