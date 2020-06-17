@@ -59,6 +59,7 @@ cfg_errors = 0;
 [Estimate_decent,cfg_errors] = findSetting(CFG,'Estimate_Decentering_Distortions',cfg_errors,1);
 % Estimate Ground Coordinates of tie points
 [Estimate_tie,cfg_errors] = findSetting(CFG,'Estimate_tie',cfg_errors,1);
+[Estimate_AllGCP,cfg_errors] = findSetting(CFG,'Estimate_AllGCP',cfg_errors,1);
 
 if cfg_errors>0
     disp ('Error getting settings')
@@ -66,13 +67,19 @@ if cfg_errors>0
 end
 
 %% Read in tie point list if needed
-if Estimate_tie
+if Estimate_tie == 1 && Estimate_AllGCP == 0
     [filereaderror, files] = ReadFiles({'.tie'});
     if filereaderror == 1
         disp ('Error reading files')
         return
     end
     TIE = files{1};
+end
+
+%% Estimate_AllGCP
+if Estimate_AllGCP == 1
+    TIE = CNT(:,1); % add all targets as TIE points
+    Estimate_tie = 1; % change Estimate_tie to 1 so all GCPs are estiamted
 end
 
 %% Convert files from String to Cell
@@ -222,6 +229,9 @@ title('normal of \delta over time')
 xlabel('Iteration')
 ylabel('normal value')
 
+%% Residuals
+
+
 %% Create output file
 padding = 4;
 disp('Writing output file...');
@@ -233,6 +243,12 @@ if gite>0
     disp('Version will be set to "unknown"');
     version = 'Unknown';
 end
+mfiles = '';
+% if version has been modified
+if contains(version,'dirty')
+    % get list of modified files
+    [gite, mfiles] = system('git ls-files -m');
+end
 
 % create output file
 fileID = fopen(Output_Filename,'w');
@@ -240,6 +256,9 @@ fileID = fopen(Output_Filename,'w');
 % heading
 fprintf(fileID,['Version: ' version]);
 fprintf(fileID,'Fish-eye model Bundle Adjustment\nWynand Tredoux -- University of Calgary -- 2020\n\n');
+if ~isempty(mfiles) % if modified files exist
+    fprintf(fileID,['Modified files:\n' mfiles]); % print list of modified files
+end
 fprintf(fileID,line);
 fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' seconds\nIterations:\t\t' num2str(count)]);
 
@@ -294,7 +313,7 @@ fprintf(fileID, [line '\n\n']);
 % Estimated EOPs for each image
 decimals = '5';
 width = '14';
-fprintf(fileID, 'Estimated EOPs\n');
+fprintf(fileID, 'Estimated EOPs\nEOP Name\tValue\tStandard Deviation\n');
 %u_perimage = Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k; %unknowns per image
 
 xhat_count = 1;
@@ -343,9 +362,9 @@ for i = 1:size(EXT,1) % for each image
 end
 
 % Estimates for IOPs and distortions for each camera
-fprintf(fileID,['\n' line '\n\nEstimated IOPs and Distortions for each Camera\n\n']);
+fprintf(fileID,['\n' line '\n\nEstimated IOPs and Distortions for each Camera\nIOP Name\tValue\tStandard Deviation\n\n']);
 
-for i = size(INT,1)/2 % for each camera
+for i = 1:size(INT,1)/2 % for each camera
     cameraID = INT{i*2-1,1};
     tmp = [{'Camera'} {cameraID}
         {'\line'} {''}];
@@ -375,6 +394,19 @@ for i = size(INT,1)/2 % for each camera
         end
     end
 end
+
+% Estimated Ground Coordinates
+fprintf(fileID,['\n' line '\n\nEstimated Ground Coordinates of targets\nTargetID\tX\tY\tZ\tstdX\tstdY\tstdZ\n\n']);
+for i = 1:size(TIE,1) % for each tie point/target
+    targetID = TIE(i); % get target name
+    XYZ = xhat(xhat_count:xhat_count+2); % get estimated XYZ form xhat
+    stdxyz = zeros(3,1);
+    for j = 1:3 % get estimated standard deviations of XYZ from Cxhat
+        stdxyz(j) = sqrt(Cx(xhat_count+j-1,xhat_count+j-1));
+    end
+    printTIE(fileID,targetID,XYZ,stdxyz,width,decimals); % print to output file
+    xhat_count = xhat_count + 3;    
+end
     
 % close file
 fclose(fileID);
@@ -387,7 +419,9 @@ end
 function printDist(fileID,name,value,std,width,decimals)
 fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'e%3$-',width,'.',decimals,'e\n'),name,value,std);
 end
-
+function printTIE(fileID,targetID,XYZ,stdxyz,width,decimals)
+fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f%5$-',width,'.',decimals,'f%6$-',width,'.',decimals,'f%7$-',width,'.',decimals,'f\n'),targetID,XYZ(1),XYZ(2),XYZ(3),stdxyz(1),stdxyz(2),stdxyz(3));
+end
 function count = countImagePoints(imageID,PHO)
 count = 0;
 for i=1:size(PHO,1)
