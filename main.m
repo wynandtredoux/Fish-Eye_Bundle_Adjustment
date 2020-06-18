@@ -36,6 +36,13 @@ if cfg_errors>0 % default filename if none is provided
     Output_Filename = 'output.out';
 end
 
+% get measurement standard deviation (is allowed to error without exiting the program)
+cfg_errors = 0;
+[Meas_std,cfg_errors] = findSetting(CFG,'Meas_std',cfg_errors);
+if cfg_errors>0 % if no std is provided, set to 1
+    Meas_std = 1;
+end
+
 cfg_errors = 0;
 % General Settings
 [Iteration_Cap,cfg_errors] = findSetting(CFG,'Iteration_Cap',cfg_errors);
@@ -141,6 +148,11 @@ if xhaterror == 1
     return
 end
 
+
+% build P weight matrix from Meas_std
+Cl = diag(repmat(Meas_std,size(PHO,1)*2,1));
+P = Cl^-1;
+
 deltasum = 100;
 count = 0;
 xhat_arr = xhat';
@@ -158,9 +170,9 @@ while deltasum > threshold
     end
     
     %% Calculate solution
-    u = A'*w;
-    N = A'*A;
-    Cx = [];
+    u = A'*P*w;
+    N = A'*P*A;
+    %Cx = [];
     
     if Inner_Constraints
         NG = [N G;
@@ -245,6 +257,9 @@ title('radial component of the residuals v_r as a function of radial distance r'
 xlabel('radial distance r')
 ylabel('radial component of the residuals v_r')
 
+%%  variance factor
+sigma0 = v'*P*v/(size(A,2)-size(A,1))
+
 %% Create output file
 padding = 4;
 disp('Writing output file...');
@@ -291,7 +306,8 @@ tmp = [{'Iteration_Cap'} 	{num2str(Iteration_Cap)}
 {'Estimate_yp'}	{num2str(Estimate_yp)}
 {'Estimate_Radial_Distortions'}	{num2str(Estimate_radial)}
 {'Num_Radial_Distortions'}	{num2str(Num_Radial_Distortions)}
-{'Estimate_tie'}	{num2str(Estimate_tie)}];
+{'Estimate_tie'}	{num2str(Estimate_tie)}
+{'Estimate_AllGCP'} {num2str(Estimate_AllGCP)}];
 
 printCell(fileID, tmp, '\t\t', padding);
 fprintf(fileID, ['\n' line '\n']);
