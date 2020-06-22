@@ -257,6 +257,19 @@ title('radial component of the residuals v_r as a function of radial distance r'
 xlabel('radial distance r')
 ylabel('radial component of the residuals v_r')
 
+%% RMS
+% RMSx/RMSy
+sum2x = 0;
+sum2y = 0;
+n = size(v,1)/2;
+for i = 1:n
+    sum2x = (v(2*i-1))^2;
+    sum2y = (v(2*i))^2;
+end
+RMSx = sqrt(1/n*sum2x)
+RMSy = sqrt(1/n*sum2y)
+RMS = sqrt(RMSx^2 + RMSy^2)
+
 %%  variance factor
 sigma0 = v'*P*v/(size(A,2)-size(A,1))
 
@@ -333,7 +346,13 @@ tmp = [{'Number of Photos'}	{num2str(size(EXT,1))}
 {'Total Number of Observations'}	{num2str(size(PHO,1)*2 + 7*Inner_Constraints)}
 {'\n'}	{''}
 {'Total Degrees of Freedom'}	{num2str((size(PHO,1)*2 + 7*Inner_Constraints) - length(xhat))}
-{'\n'}	{''}];
+{'\n'}	{''}
+{'Sigma0'}	{num2str(sigma0)}
+{'RMSx'}	{num2str(RMSx)}
+{'RMSy'}	{num2str(RMSy)}
+{'RMS'}	{num2str(RMS)}
+{'\n'}	{''}
+];
 
 printCell(fileID, tmp, '', padding);
 
