@@ -46,6 +46,7 @@ clear all
 clc
 selpath = {'E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\GoPro dataset','E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\Ladybug dataset 1','E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\Ladybug dataset 2'};
 exts = {'.pho','.ext','.cnt','.int'};
+projectDir = pwd;
 
 % search through folders and subfolders for all valid sets of data files
 allfolders  = [];
@@ -58,7 +59,11 @@ end
 for i = 1:length(allfolders)
     folder = allfolders{i};
     % run main script with batch argument
-    main(folder)
+    error = main(folder);
+    if error == 1
+        cd(projectDir);
+        break;
+    end
 end
 
 
