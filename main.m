@@ -1,9 +1,13 @@
 %% Bundle adjustment script using equidistant fish-eye model
 % Wynand Tredoux, May 2020
-clear all
-close all
+
+function main(varargin)
+%clear all
+%close all
 format longg
 clc
+celldisp(varargin)
+enable_plots = 0;
 
 tic %start time
 date = char(datetime); %date
@@ -183,7 +187,7 @@ while deltasum > threshold
         % seperate k and delta
         delta_k = -Cx*uG;
         delta = delta_k(1:size(u,1),:);
-        k = delta_k(size(u,1)+1:end,:);
+        %k = delta_k(size(u,1)+1:end,:);
         % seperate Cx into only the unknowns part
         Cx = Cx(1:size(A,2),1:size(A,2));
     else
@@ -234,12 +238,14 @@ disp(['Elapsed time is ' char(time) ' seconds.'])
 
 
 % plot normal of delta over time
-figure;
-hold on
-plot(1:length(deltasumarr),deltasumarr)
-title('normal of \delta over time')
-xlabel('Iteration')
-ylabel('normal value')
+if enable_plots
+    figure;
+    hold on
+    plot(1:length(deltasumarr),deltasumarr)
+    title('normal of \delta over time')
+    xlabel('Iteration')
+    ylabel('normal value')
+end
 
 %% Residuals
 % calculate x,y residuals for all image measurements
@@ -249,13 +255,14 @@ RSD = BuildRSD(v,PHO,EXT,INT,xhat,... %data
     Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
 
 % create plot of radial component of the residuals - RSD(:,8) - as a function of radial distance - RSD(:,5)
-%tmp = [[RSD{:,5}]' [RSD{:,8}]']; % get r and v_r from RSD
-figure;
-hold on
-scatter([RSD{:,5}],[RSD{:,8}]);
-title('radial component of the residuals v_r as a function of radial distance r')
-xlabel('radial distance r')
-ylabel('radial component of the residuals v_r')
+if enable_plots
+    figure;
+    hold on
+    scatter([RSD{:,5}],[RSD{:,8}]);
+    title('radial component of the residuals v_r as a function of radial distance r')
+    xlabel('radial distance r')
+    ylabel('radial component of the residuals v_r')
+end
 
 %% RMS
 % RMSx/RMSy
@@ -288,7 +295,7 @@ mfiles = '';
 % if version has been modified
 if contains(version,'dirty')
     % get list of modified files
-    [gite, mfiles] = system('git ls-files -m');
+    [~, mfiles] = system('git ls-files -m');
 end
 
 % create output file
@@ -461,6 +468,7 @@ end
 fclose(fileID);
 disp('Done!');
 
+%% Functions
 % small functions not worth putting in their own files
 function printEOP(fileID,name,value,std,width,decimals)
 fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f\n'),name,value,std);
@@ -473,17 +481,19 @@ fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.','0','i%3$-',w
 end
 function count = countImagePoints(imageID,PHO)
 count = 0;
-for i=1:size(PHO,1)
-    if strcmp(PHO{i,2},imageID)
+for function_i=1:size(PHO,1)
+    if strcmp(PHO{function_i,2},imageID)
         count = count + 1;
     end
 end
 end
 function count = countTargetImages(targetID,PHO)
 count = 0;
-for i=1:size(PHO,1)
-    if strcmp(PHO{i,1},targetID)
+for function_i=1:size(PHO,1)
+    if strcmp(PHO{function_i,1},targetID)
         count = count + 1;
     end
 end
+end
+
 end
