@@ -1,39 +1,104 @@
 %% Bundle adjustment script using equidistant fish-eye model
 % Wynand Tredoux, May 2020
 
-function main(varargin)
+function main_error = main(varargin)
+%% Setup
 %clear all
 %close all
 format longg
-clc
+%clc
 celldisp(varargin)
+
+main_error = 0;
 enable_plots = 0;
+batch = 0;
+folder = '';
+
+% get data directory if provided
+if ~isempty(varargin)
+    if length(varargin) > 1
+        disp('Error: too many arguments in main');
+        main_error = 1;
+        return
+    else
+        batch = 1;
+        folder = varargin{1};
+    end
+end
+        
+projectDir = pwd;
 
 tic %start time
 date = char(datetime); %date
+% get version of code using the "git describe" command
+[gite, version] = system('git describe --dirty'); % "dirty" indicates that the local version has been modified and doesn't fully match the version on github
+if gite>0
+    disp('Error: could not get git verion with "git describe"')
+    disp('Version will be set to "unknown"');
+    version = 'Unknown';
+end
 %% read in files
-[filereaderror, files] = ReadFiles({'.pho','.ext','.cnt','.int','.cfg'});
-if filereaderror == 1
+%PHO image measurements [pointID image xmm ymm]
+%EXT EOPs [imageID CamreaID Xc Yc Zc omega phi kappa]
+%CNT object coordinates [TargetID X Y Z]
+%INT IOPs [CameraID yaxis_dir xmin ymin xmax ymax]
+%          [xp yp c k1 k2 k3 ... p1 p2] <- if k1,k2,k3... and p1,p2 are omitted, they will be assumed to be 0
+%TIE = []; % list of tie point target IDs (read in later if needed)
+%CFG config file
+
+% if main is being run in batch mode
+if batch
+    % need to add the project directory to MATLAB's path so functions still work
+    addpath(projectDir)
+    
+    % check to see if there is a cfg file in the directory if given
+    files = dir(folder);
+    files = files(~[files.isdir]);
+    cfgfound = 0;
+    for i = 1:length(files)
+        [~, ~, ext] = fileparts(files(i).name);
+        if strcmp(ext,'.cfg')
+            cfgfound = 1;
+            break;
+        end
+    end
+    % if there no cfg file, read in the one in project directory
+    if ~cfgfound
+        [filereaderror, files] = ReadFiles({'.cfg'});
+        CFG = files{1};
+    else
+        % change dir and read the CFG in the data folder
+        cd(folder);
+        [filereaderror, files] = ReadFiles({'.cfg'});
+        CFG = files{1};
+    end
+    
+    cd(folder)
+    % read in the rest of the files
+    [tmp, files] = ReadFiles({'.pho','.ext','.cnt','.int'});
+    filereaderror = filereaderror + tmp;
+    
+else % if main is being run normally  
+    [filereaderror, files] = ReadFiles({'.pho','.ext','.cnt','.int','.cfg'});
+    CFG = files{5};
+end
+
+if filereaderror >= 1
     disp ('Error reading files')
+    main_error = 1;
     return
 else
     disp('Files read successfully!')
 end
 
-PHO = files{1}; % image measurements [pointID image xmm ymm]
-%n = length(PHO)*2; % number of measurements, (x,y) for each line of PHO
-EXT = files{2}; % EOPs [imageID CamreaID Xc Yc Zc omega phi kappa]
-%u = size(EXT,1)*6; % number of unknowns, (Xc, Yc, Zc, omega, phi, kappa) for each image in EXT
-
-CNT = files{3}; % object coordinates [TargetID X Y Z]
-INT = files{4}; % IOPs [CameraID yaxis_dir xmin ymin xmax ymax]
-%                      [xp yp c]
-TIE = []; % list of tie point target IDs (read in later if needed)
+PHO = files{1}; 
+EXT = files{2}; 
+CNT = files{3}; 
+INT = files{4};
+TIE = [];
 
 %% Get settings from cfg file
-CFG = files{5};
-
-% get output filename (is allowed to error without exiting the program)
+% get output filename from cfg (is allowed to error without exiting the program)
 cfg_errors = 0;
 [Output_Filename,cfg_errors] = findSetting(CFG,'Output_Filename',cfg_errors);
 if cfg_errors>0 % default filename if none is provided
@@ -74,6 +139,7 @@ cfg_errors = 0;
 
 if cfg_errors>0
     disp ('Error getting settings')
+    main_error = 1;
     return
 end
 
@@ -82,6 +148,7 @@ if Estimate_tie == 1 && Estimate_AllGCP == 0
     [filereaderror, files] = ReadFiles({'.tie'});
     if filereaderror == 1
         disp ('Error reading files')
+        main_error = 1;
         return
     end
     TIE = files{1};
@@ -137,9 +204,22 @@ for i = 1:2:size(INT,1)
     tmp(i,5) = {str2double(INT(i,5))};
     tmp(i,6) = {str2double(INT(i,6))};
     % row 2
-    for j = 1:(5+Num_Radial_Distortions)
+    for j = 1:3
         tmp(i+1,j) = {str2double(INT(i+1,j))};
     end
+    % if no distortion parameters are provided in INT, set them to 0
+    for j = 4:(5+Num_Radial_Distortions)
+        if size(INT,2)>=j % check that elements exist in INT 
+            if ~ismissing(INT(i+1,j)) % check that they are not missing
+                tmp(i+1,j) = {str2double(INT(i+1,j))};
+            else
+                tmp(i+1,j) = {0};
+            end
+        else
+            tmp(i+1,j) = {0};
+        end
+    end
+    
 end
 INT = tmp;
 clear tmp
@@ -149,6 +229,7 @@ clear tmp
     Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
 if xhaterror == 1
     disp('Error building xhat');
+    main_error = 1;
     return
 end
 
@@ -170,6 +251,7 @@ while deltasum > threshold
         Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent);
     if Awerror == 1
         disp('Error building A and w');
+        main_error = 1;
         return
     end
     
@@ -284,13 +366,6 @@ sigma0 = v'*P*v/(size(A,2)-size(A,1))
 padding = 4;
 disp('Writing output file...');
 line = '*************************************************************************************************************';
-% get version of code using the "git describe" command
-[gite, version] = system('git describe --dirty'); % "dirty" indicates that the local version has been modified and doesn't fully match the version on github
-if gite>0
-    disp('Error: could not get git verion with "git describe"')
-    disp('Version will be set to "unknown"');
-    version = 'Unknown';
-end
 mfiles = '';
 % if version has been modified
 if contains(version,'dirty')
@@ -466,6 +541,12 @@ end
     
 % close file
 fclose(fileID);
+
+% change back to project directory if in batch mode
+if batch
+    cd(projectDir)
+end
+
 disp('Done!');
 
 %% Functions
