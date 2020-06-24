@@ -493,33 +493,42 @@ end
 
 % Estimates for IOPs and distortions for each camera
 fprintf(fileID,['\n' line '\n\nEstimated IOPs and Distortions for each Camera\nIOP Name\tValue\tStandard Deviation\n\n']);
+PAR = []; % cell matrix to store camera IOPs and their standard deviations
 
 for i = 1:size(INT,1)/2 % for each camera
     cameraID = INT{i*2-1,1};
     tmp = [{'Camera'} {cameraID}
         {'\line'} {''}];
+%     Partmp = cell(1,3);
+%     Partmp(1,1:2) = [{'Camera'} {cameraID}];
+    PAR = [PAR; [{'Camera'} {cameraID} {[]}];];
     printCell(fileID, tmp, '', padding);
     if Estimate_xp
         printEOP(fileID,'xp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        PAR = [PAR; [{'xp'} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
         xhat_count = xhat_count + 1;
     end
     if Estimate_yp
         printEOP(fileID,'yp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        PAR = [PAR; [{'yp'} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
         xhat_count = xhat_count + 1;
     end
     if Estimate_c
         printEOP(fileID,'c',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        PAR = [PAR; [{'c'} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
         xhat_count = xhat_count + 1;
     end
     if Estimate_radial
         for j = 1:Num_Radial_Distortions
             printDist(fileID,strcat('k',num2str(j)),xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+            PAR = [PAR; [{strcat('k',num2str(j))} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
             xhat_count = xhat_count + 1;
         end
     end
     if Estimate_decent
         for j = 1:2
             printDist(fileID,strcat('p',num2str(j)),xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+            PAR = [PAR; [{strcat('p',num2str(j))} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
             xhat_count = xhat_count + 1;
         end
     end
@@ -541,6 +550,11 @@ end
     
 % close file
 fclose(fileID);
+
+% output PAR and RSD files
+[~,name,~] = fileparts(Output_Filename);
+writecell(RSD,strcat(name,'.rsd'),'Delimiter','tab','FileType','text');
+writecell(PAR,strcat(name,'.par'),'Delimiter','tab','FileType','text');
 
 % change back to project directory if in batch mode
 if batch

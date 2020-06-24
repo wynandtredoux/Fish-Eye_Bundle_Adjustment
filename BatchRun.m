@@ -66,19 +66,6 @@ for i = 1:length(allfolders)
     end
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 % find a specific set of files based on their extensions
 function [folders] = findfiles(folder,file_exts)
 % folder - starting folder (string)
