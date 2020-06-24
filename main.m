@@ -394,24 +394,24 @@ fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' se
 
 % settings used
 fprintf(fileID,'\n\nSettings used:\n');
-tmp = [{'Iteration_Cap'} 	{num2str(Iteration_Cap)}
-{'Threshold_Value'}	{num2str(threshold)}
-{'Inner_Constraints'}	{num2str(Inner_Constraints)}
-{'Estimate_Xc'}	{num2str(Estimate_Xc)}
-{'Estimate_Yc'}	{num2str(Estimate_Yc)}
-{'Estimate_Zc'}	{num2str(Estimate_Zc)}
-{'Estimate_Omega'}	{num2str(Estimate_w)}
-{'Estimate_Phi'}	{num2str(Estimate_p)}
-{'Estimate_Kappa'}	{num2str(Estimate_k)}
-{'Estimate_c'}	{num2str(Estimate_c)}
-{'Estimate_xp'}	{num2str(Estimate_xp)}
-{'Estimate_yp'}	{num2str(Estimate_yp)}
-{'Estimate_Radial_Distortions'}	{num2str(Estimate_radial)}
-{'Num_Radial_Distortions'}	{num2str(Num_Radial_Distortions)}
-{'Estimate_tie'}	{num2str(Estimate_tie)}
-{'Estimate_AllGCP'} {num2str(Estimate_AllGCP)}];
+% tmp = [{'Iteration_Cap'} 	{num2str(Iteration_Cap)}
+% {'Threshold_Value'}	{num2str(threshold)}
+% {'Inner_Constraints'}	{num2str(Inner_Constraints)}
+% {'Estimate_Xc'}	{num2str(Estimate_Xc)}
+% {'Estimate_Yc'}	{num2str(Estimate_Yc)}
+% {'Estimate_Zc'}	{num2str(Estimate_Zc)}
+% {'Estimate_Omega'}	{num2str(Estimate_w)}
+% {'Estimate_Phi'}	{num2str(Estimate_p)}
+% {'Estimate_Kappa'}	{num2str(Estimate_k)}
+% {'Estimate_c'}	{num2str(Estimate_c)}
+% {'Estimate_xp'}	{num2str(Estimate_xp)}
+% {'Estimate_yp'}	{num2str(Estimate_yp)}
+% {'Estimate_Radial_Distortions'}	{num2str(Estimate_radial)}
+% {'Num_Radial_Distortions'}	{num2str(Num_Radial_Distortions)}
+% {'Estimate_tie'}	{num2str(Estimate_tie)}
+% {'Estimate_AllGCP'} {num2str(Estimate_AllGCP)}];
 
-printCell(fileID, tmp, '\t\t', padding);
+printCell(fileID, CFG, '\t\t', padding);
 fprintf(fileID, ['\n' line '\n']);
 
 % Summery of unknowns/observations
@@ -436,10 +436,10 @@ tmp = [{'Number of Photos'}	{num2str(size(EXT,1))}
 {'\n'}	{''}
 {'Total Degrees of Freedom'}	{num2str((size(PHO,1)*2 + 7*Inner_Constraints) - length(xhat))}
 {'\n'}	{''}
-{'Sigma0'}	{num2str(sigma0)}
-{'RMSx'}	{num2str(RMSx)}
-{'RMSy'}	{num2str(RMSy)}
-{'RMS'}	{num2str(RMS)}
+{'Sigma0'}	{num2str(sigma0,10)}
+{'RMSx'}	{num2str(RMSx,10)}
+{'RMSy'}	{num2str(RMSy,10)}
+{'RMS'}	{num2str(RMS,10)}
 {'\n'}	{''}
 ];
 
