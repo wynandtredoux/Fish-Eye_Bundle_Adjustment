@@ -107,9 +107,12 @@ end
 
 % get measurement standard deviation (is allowed to error without exiting the program)
 cfg_errors = 0;
+no_std_y = 0;
 [Meas_std,cfg_errors] = findSetting(CFG,'Meas_std',cfg_errors);
 if cfg_errors>0 % if no std is provided, set to 1
     Meas_std = 1;
+else
+    [Meas_std_y,no_std_y] = findSetting(CFG,'Meas_std_y',cfg_errors);
 end
 
 cfg_errors = 0;
@@ -234,8 +237,12 @@ if xhaterror == 1
 end
 
 
-% build P weight matrix from Meas_std
-Cl = diag(repmat(Meas_std,size(PHO,1)*2,1));
+% build P weight matrix from Meas_std and Meas_std_y if provided
+if no_std_y
+    Cl = diag(repmat(Meas_std,size(PHO,1)*2,1));
+else
+    Cl = diag(repmat([Meas_std; Meas_std_y;],size(PHO,1),1));
+end
 P = Cl^-1;
 
 deltasum = 100;
