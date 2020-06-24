@@ -1,7 +1,7 @@
 %% Batch run
 % Run main.m for n number of datasets
 % BatchRun.m will search selected folers and all subfolders for sets of cnt, int, ext, and pho files
-% output files from main.m will be created in the subfolders
+% output files from main.m will be created in each subfolder
 
 % Usage: 
 %   - Run BatchRun.m
@@ -27,26 +27,26 @@
 
 % This folder structure will produce the following output in the data directories
 % ->Dataset1
-%   -> Dataset1_Dataset1.out
+%   -> output.out
 %   -> Cam0
-%       -> Dataset1_Cam0.out
+%       -> output.out
 % ->Dataset2
 %   -> Cam0
-%       -> Dataset2_Cam0.out
+%       -> output.out
 
 % makes use of uigetfile_n_dir
 % Reference: Tiago (2020). uigetfile_n_dir : select multiple files and directories
 % (https://www.mathworks.com/matlabcentral/fileexchange/32555-uigetfile_n_dir-select-multiple-files-and-directories), MATLAB Central File Exchange.
 % Retrieved June 23, 2020.
 
-
-%selpath = uigetdir2(pwd,'Select Data Folders');
-% for debugging:
 clear all
 clc
-selpath = {'E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\GoPro dataset','E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\Ladybug dataset 1','E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\Ladybug dataset 2'};
-exts = {'.pho','.ext','.cnt','.int'};
 projectDir = pwd;
+selpath = uigetdir2(pwd,'Select Data Folders');
+exts = {'.pho','.ext','.cnt','.int'};
+% for debugging:
+% selpath = {'E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\GoPro dataset','E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\Ladybug dataset 1','E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\Ladybug dataset 2'};
+
 
 % search through folders and subfolders for all valid sets of data files
 allfolders  = [];
