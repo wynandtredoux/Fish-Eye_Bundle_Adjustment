@@ -37,6 +37,12 @@ if gite>0
     disp('Version will be set to "unknown"');
     version = 'Unknown';
 end
+mfiles = '';
+% if version has been modified
+if contains(version,'dirty')
+    % get list of modified files
+    [~, mfiles] = system('git ls-files -m');
+end
 %% read in files
 %PHO image measurements [pointID image xmm ymm]
 %EXT EOPs [imageID CamreaID Xc Yc Zc omega phi kappa]
@@ -373,12 +379,6 @@ sigma0 = v'*P*v/(size(A,2)-size(A,1))
 padding = 4;
 disp('Writing output file...');
 line = '*************************************************************************************************************';
-mfiles = '';
-% if version has been modified
-if contains(version,'dirty')
-    % get list of modified files
-    [~, mfiles] = system('git ls-files -m');
-end
 
 % create output file
 fileID = fopen(Output_Filename,'w');
@@ -500,7 +500,9 @@ end
 
 % Estimates for IOPs and distortions for each camera
 fprintf(fileID,['\n' line '\n\nEstimated IOPs and Distortions for each Camera\nIOP Name\tValue\tStandard Deviation\n\n']);
-PAR = []; % cell matrix to store camera IOPs and their standard deviations
+PAR = [{'Created with Fish-eye model Bundle Adjustment version:'} {version} {[]}; % cell matrix to store camera IOPs and their standard deviations
+    {'Execution date'} {date} {[]};
+    {[]} {[]} {[]};];
 
 for i = 1:size(INT,1)/2 % for each camera
     cameraID = INT{i*2-1,1};
