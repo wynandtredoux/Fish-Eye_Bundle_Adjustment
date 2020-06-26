@@ -117,6 +117,7 @@ no_std_y = 0;
 [Meas_std,cfg_errors] = findSetting(CFG,'Meas_std',cfg_errors);
 if cfg_errors>0 % if no std is provided, set to 1
     Meas_std = 1;
+    no_std_y = 1;
 else
     [Meas_std_y,no_std_y] = findSetting(CFG,'Meas_std_y',cfg_errors);
 end
@@ -365,8 +366,8 @@ sum2x = 0;
 sum2y = 0;
 n = size(v,1)/2;
 for i = 1:n
-    sum2x = (v(2*i-1))^2;
-    sum2y = (v(2*i))^2;
+    sum2x = sum2x + (v(2*i-1))^2;
+    sum2y = sum2y + (v(2*i))^2;
 end
 RMSx = sqrt(1/n*sum2x)
 RMSy = sqrt(1/n*sum2y)
@@ -556,7 +557,11 @@ for i = 1:size(TIE,1) % for each tie point/target
     printTIE(fileID,targetID,numImages,XYZ,stdxyz,width,decimals); % print to output file
     xhat_count = xhat_count + 3;    
 end
-    
+
+if xhat_count ~= size(A,2) + 1
+    disp("warning: xhat_count didn't end on it's expected value (unknowns + 1)");
+end
+
 % close file
 fclose(fileID);
 
