@@ -246,9 +246,9 @@ end
 
 % build P weight matrix from Meas_std and Meas_std_y if provided
 if no_std_y
-    Cl = diag(repmat(Meas_std,size(PHO,1)*2,1));
+    Cl = diag(repmat(Meas_std^2,size(PHO,1)*2,1));
 else
-    Cl = diag(repmat([Meas_std; Meas_std_y;],size(PHO,1),1));
+    Cl = diag(repmat([Meas_std^2; Meas_std_y^2;],size(PHO,1),1));
 end
 P = Cl^-1;
 
@@ -284,6 +284,7 @@ while deltasum > threshold
         delta_k = -Cx*uG;
         delta = delta_k(1:size(u,1),:);
         %k = delta_k(size(u,1)+1:end,:);
+        
         % seperate Cx into only the unknowns part
         Cx = Cx(1:size(A,2),1:size(A,2));
     else
@@ -374,7 +375,7 @@ RMSy = sqrt(1/n*sum2y)
 RMS = sqrt(RMSx^2 + RMSy^2)
 
 %%  variance factor
-sigma0 = v'*P*v/(size(A,1)-size(A,2))
+sigma0 = sqrt(v'*P*v/(size(A,1)-size(A,2)))
 
 %% Create output file
 padding = 4;
