@@ -373,7 +373,7 @@ RMSy = sqrt(1/n*sum2y)
 RMS = sqrt(RMSx^2 + RMSy^2)
 
 %%  variance factor
-sigma0 = v'*P*v/(size(A,2)-size(A,1))
+sigma0 = v'*P*v/(size(A,1)-size(A,2))
 
 %% Create output file
 padding = 4;
