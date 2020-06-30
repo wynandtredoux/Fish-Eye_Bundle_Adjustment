@@ -292,7 +292,7 @@ while deltasum > threshold
         delta = -Cx*u;
     end
     
-    % scale distortion parameters in delta with values from dist_scaling
+    % scale distortion parameters and variances in delta/Cx with values from dist_scaling
     % for each camera
     for i = 1:size(dist_scaling,1)
         % radial distortion
@@ -302,6 +302,7 @@ while deltasum > threshold
             % scale paramaters
             for j = 1:Num_Radial_Distortions
                 delta(radial_index+j-1) = delta(radial_index+j-1)/dist_scaling(i,j+2);
+                Cx(radial_index+j-1,radial_index+j-1) = Cx(radial_index+j-1,radial_index+j-1)/dist_scaling(i,j+2);
             end
         end
         % decentering distortion
@@ -310,8 +311,10 @@ while deltasum > threshold
             decent_index = dist_scaling(i,2);
             % scale P1
             delta(decent_index) = delta(decent_index)/dist_scaling(i,3);
+            Cx(decent_index,decent_index) = Cx(decent_index,decent_index)/dist_scaling(i,3);
             % scale P2
             delta(decent_index+1) = delta(decent_index+1)/dist_scaling(i,3);
+            Cx(decent_index+1,decent_index+1) = Cx(decent_index+1,decent_index+1)/dist_scaling(i,3);
         end
     end
     
