@@ -292,6 +292,18 @@ while deltasum > threshold
         delta = -Cx*u;
     end
     
+    % Correlation matrix (this needs to be done before distortion re-scaling)
+    Correlation = zeros(size(Cx,1),size(Cx,2));
+    for i = 1:size(Cx,1)
+        for j = 1:size(Cx,2)
+            sigmaX = sqrt(Cx(i,i));
+            sigmaY = sqrt(Cx(j,j));
+            sigmaXY = Cx(i,j);
+
+            Correlation(i,j) = sigmaXY / (sigmaX*sigmaY);
+        end
+    end
+    
     % scale distortion parameters and variances in delta/Cx with values from dist_scaling
     % for each camera
     for i = 1:size(dist_scaling,1)
@@ -379,6 +391,7 @@ RMS = sqrt(RMSx^2 + RMSy^2)
 
 %%  variance factor
 sigma0 = sqrt(v'*P*v/(size(A,1)-size(A,2)))
+%Cx = sigma0.*Cx;
 
 %% Create output file
 padding = 4;
@@ -517,6 +530,7 @@ for i = 1:size(INT,1)/2 % for each camera
 %     Partmp(1,1:2) = [{'Camera'} {cameraID}];
     PAR = [PAR; [{'Camera'} {cameraID} {[]}];];
     printCell(fileID, tmp, '', padding);
+    xhat_count_start = xhat_count;
     if Estimate_xp
         printEOP(fileID,'xp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         PAR = [PAR; [{'xp'} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
@@ -540,11 +554,27 @@ for i = 1:size(INT,1)/2 % for each camera
         end
     end
     if Estimate_decent
-        for j = 1:2
+        for j = 1:2 
             printDist(fileID,strcat('p',num2str(j)),xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
             PAR = [PAR; [{strcat('p',num2str(j))} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
             xhat_count = xhat_count + 1;
         end
+    end
+    xhat_count_end = xhat_count - 1;
+    fprintf(fileID,'\nCovariance sub-matrix\n-------------------------------\n');
+    Corr_sub = Correlation(xhat_count_start:xhat_count_end,xhat_count_start:xhat_count_end); % get correlation submatrix
+    names = PAR(i*9-4:i*9-4+(xhat_count_end-xhat_count_start),1); % get IOP list from PAR
+    names = [{''}; names;]; % add whitespace
+    fprintf(fileID,strcat('%-6.2s'),names{:}); % print cell names at the top
+    fprintf(fileID,'\n');
+    
+    % print submatrix
+    for j = 1:size(Corr_sub,1)
+        fprintf(fileID,strcat('%-6.2s'),names{j+1}); % print name
+        for k=1:j
+            fprintf(fileID,strcat('%-+6.2f'),Corr_sub(j,k)); % print only lower trianglular part of matrix
+        end
+        fprintf(fileID,'\n') % new line
     end
 end
 
