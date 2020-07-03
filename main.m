@@ -574,7 +574,7 @@ for i = 1:size(INT,1)/2 % for each camera
         for k=1:j
             fprintf(fileID,strcat('%-+6.2f'),Corr_sub(j,k)); % print only lower trianglular part of matrix
         end
-        fprintf(fileID,'\n') % new line
+        fprintf(fileID,'\n'); % new line
     end
 end
 
