@@ -501,7 +501,7 @@ for i = 1:size(EXT,1) % for each image
     % orentation angles need to be converted to degrees form radians
     % w
     if Estimate_w
-        printEOP(fileID,'Omeaga',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
+        printEOP(fileID,'Omega',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
         xhat_count = xhat_count + 1;
     end
     % p
@@ -524,7 +524,17 @@ PAR = [{'Created with Fish-eye model Bundle Adjustment version:'} {version} {[]}
 
 for i = 1:size(INT,1)/2 % for each camera
     cameraID = INT{i*2-1,1};
+    ydir = INT{i*2-1,2};
+    xmin = INT{i*2-1,3};
+    ymin = INT{i*2-1,4};
+    xmax = INT{i*2-1,5};
+    ymax = INT{i*2-1,6};
     tmp = [{'Camera'} {cameraID}
+        {'y axis dir'} {num2str(ydir)}
+        {'x min'} {num2str(xmin)}
+        {'y min'} {num2str(ymin)}
+        {'x max'} {num2str(xmax)}
+        {'y max'} {num2str(ymax)}
         {'\line'} {''}];
 %     Partmp = cell(1,3);
 %     Partmp(1,1:2) = [{'Camera'} {cameraID}];
