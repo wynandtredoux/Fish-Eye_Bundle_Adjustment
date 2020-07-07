@@ -10,7 +10,7 @@ format longg
 celldisp(varargin)
 
 main_error = 0;
-enable_plots = 0;
+enable_plots = 1;
 batch = 0;
 folder = '';
 
@@ -351,14 +351,14 @@ disp(['Elapsed time is ' char(time) ' seconds.'])
 
 
 % plot normal of delta over time
-if enable_plots
-    figure;
-    hold on
-    plot(1:length(deltasumarr),deltasumarr)
-    title('normal of \delta over time')
-    xlabel('Iteration')
-    ylabel('normal value')
-end
+% if enable_plots
+%     figure;
+%     hold on
+%     plot(1:length(deltasumarr),deltasumarr)
+%     title('normal of \delta over time')
+%     xlabel('Iteration')
+%     ylabel('normal value')
+% end
 
 %% Residuals
 % calculate x,y residuals for all image measurements
@@ -369,12 +369,15 @@ RSD = BuildRSD(v,PHO,EXT,INT,xhat,... %data
 
 % create plot of radial component of the residuals - RSD(:,8) - as a function of radial distance - RSD(:,5)
 if enable_plots
-    figure;
+    fig = figure;
     hold on
     scatter([RSD{:,5}],[RSD{:,8}]);
     title('radial component of the residuals v_r as a function of radial distance r')
     xlabel('radial distance r')
     ylabel('radial component of the residuals v_r')
+    % save figure
+    saveas(fig,'RSDvR.png');
+    close(fig);
 end
 
 %% corrected image coordinates
