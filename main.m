@@ -108,7 +108,8 @@ TIE = [];
 cfg_errors = 0;
 [Output_Filename,cfg_errors] = findSetting(CFG,'Output_Filename',cfg_errors);
 if cfg_errors>0 % default filename if none is provided
-    Output_Filename = 'output.out';
+    [~, Output_Filename, ~] = fileparts(pwd); % set to folder name
+    Output_Filename = strcat(Output_Filename,'.out');
 end
 
 % get measurement standard deviation (is allowed to error without exiting the program)

@@ -5,3 +5,6 @@ config.cfg
 *.cfg
 Fish-eye.par
 Fish-eye.rsd
+*.out
+*.par
+*.rsd
