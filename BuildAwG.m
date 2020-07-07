@@ -230,6 +230,9 @@ for i=1:length(PHO)
     end
     %delta_r = K(1)*r^2 + K(2)*r^4 + K(3)*r^6 + K(4)*r^8 + K(5)*r^10;
     % decentering distortions
+    if length(P) < 2 % if no decentering distortions are given, P is just 0
+        P = [0 0]; % make it [0 0] to avoid errors
+    end
     decentering_x = P(1)*(y_bar^2 + 3*x_bar^2) + 2*P(2)*x_bar*y_bar;
     decentering_y = P(2)*(x_bar^2 + 3*y_bar^2) + 2*P(1)*x_bar*y_bar;
     
