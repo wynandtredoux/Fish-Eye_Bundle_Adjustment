@@ -612,7 +612,7 @@ end
 % corrected image measurements
 fprintf(fileID,['\n' line '\n\nCorrected Image Measurements\nPointID\tImageID\tCorrected x\tCorrected y\n\n']);
 for i = 1:size(PHO_corr,1) % for each point
-    fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'s%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),PHO_corr{i,1},PHO_corr{i,2},PHO_corr{i,3},PHO_corr{i,4});
+    fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'s%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),PHO_corr{i,1},PHO_corr{i,2},PHO_corr{i,3},PHO_corr{i,4});
 end
 
 
