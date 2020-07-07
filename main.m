@@ -362,7 +362,7 @@ end
 %% Residuals
 % calculate x,y residuals for all image measurements
 v = A*delta + w;
-% build RSD with the format point_id image _id x_obs y_obs radial_dist v_x v_y v_r v_t
+% build RSD and corrected measurements with the format point_id image _id x_obs y_obs radial_dist v_x v_y v_r v_t
 RSD = BuildRSD(v,PHO,EXT,INT,xhat,... %data
     Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
 
@@ -374,6 +374,13 @@ if enable_plots
     title('radial component of the residuals v_r as a function of radial distance r')
     xlabel('radial distance r')
     ylabel('radial component of the residuals v_r')
+end
+
+%% corrected image coordinates
+PHO_corr = PHO; % get origional coordinates
+for i = 1:length(PHO_corr)
+    PHO_corr(i,3) = {PHO_corr{i,3} + RSD{i,6}}; % correct x coords
+    PHO_corr(i,4) = {PHO_corr{i,4} + RSD{i,7}}; % correct y coords
 end
 
 %% RMS
@@ -589,7 +596,7 @@ for i = 1:size(INT,1)/2 % for each camera
 end
 
 % Estimated Ground Coordinates
-fprintf(fileID,['\n' line '\n\nEstimated Ground Coordinates of targets\nTargetID\tX\tY\tZ\tstdX\tstdY\tstdZ\n\n']);
+fprintf(fileID,['\n' line '\n\nEstimated Ground Coordinates of targets\nTargetID\tnumImages\tX\tY\tZ\tstdX\tstdY\tstdZ\n\n']);
 for i = 1:size(TIE,1) % for each tie point/target
     targetID = TIE(i); % get target name
     numImages = countTargetImages(targetID,PHO); % get number of images for target
@@ -601,6 +608,13 @@ for i = 1:size(TIE,1) % for each tie point/target
     printTIE(fileID,targetID,numImages,XYZ,stdxyz,width,decimals); % print to output file
     xhat_count = xhat_count + 3;    
 end
+
+% corrected image measurements
+fprintf(fileID,['\n' line '\n\nCorrected Image Measurements\nPointID\tImageID\tCorrected x\tCorrected y\n\n']);
+for i = 1:size(PHO_corr,1) % for each point
+    fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'s%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),PHO_corr{i,1},PHO_corr{i,2},PHO_corr{i,3},PHO_corr{i,4});
+end
+
 
 if xhat_count ~= size(A,2) + 1
     disp("warning: xhat_count didn't end on it's expected value (unknowns + 1)");
