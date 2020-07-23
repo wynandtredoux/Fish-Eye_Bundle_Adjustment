@@ -592,7 +592,8 @@ for i = 1:size(INT,1)/2 % for each camera
     xhat_count_end = xhat_count - 1;
     fprintf(fileID,'\nCovariance sub-matrix\n-------------------------------\n');
     Corr_sub = Correlation(xhat_count_start:xhat_count_end,xhat_count_start:xhat_count_end); % get correlation submatrix
-    names = PAR(i*9-4:i*9-4+(xhat_count_end-xhat_count_start),1); % get IOP list from PAR
+    num_IOPs = (xhat_count_end-xhat_count_start);
+    names = PAR((i-1)*(num_IOPs+2)+5:(i-1)*(num_IOPs+2)+5+num_IOPs,1); % get IOP list from PAR
     names = [{''}; names;]; % add whitespace
     fprintf(fileID,strcat('%-6.2s'),names{:}); % print cell names at the top
     fprintf(fileID,'\n');
@@ -605,6 +606,7 @@ for i = 1:size(INT,1)/2 % for each camera
         end
         fprintf(fileID,'\n'); % new line
     end
+    fprintf(fileID,'\n'); % new line
 end
 
 % Estimated Ground Coordinates
@@ -645,6 +647,7 @@ if batch
     cd(projectDir)
 end
 
+fclose('all'); % just in case files aren't closed properly
 disp('Done!');
 
 %% Functions
