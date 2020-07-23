@@ -35,7 +35,7 @@ date = char(datetime); %date
 if gite>0
     disp('Error: could not get git verion with "git describe"')
     disp('Version will be set to "unknown"');
-    version = 'Unknown';
+    version = 'Unknown\n';
 end
 mfiles = '';
 % if version has been modified
@@ -372,7 +372,7 @@ if enable_plots
     fig = figure;
     hold on
     scatter([RSD{:,5}],[RSD{:,8}]);
-    title('radial component of the residuals v_r as a function of radial distance r')
+    title('v_r vs r')
     xlabel('radial distance r')
     ylabel('radial component of the residuals v_r')
     % save figure
