@@ -123,6 +123,14 @@ else
     [Meas_std_y,no_std_y] = findSetting(CFG,'Meas_std_y',cfg_errors);
 end
 
+% get model type (is allowed to error without exiting the program)
+cfg_errors = 0;
+[type,cfg_errors] = findSetting(CFG,'Type',cfg_errors);
+if cfg_errors>0 % if no type is provided, set to fisheye
+    type = 'fisheye';
+end
+disp(['Type set to ' type]);
+
 cfg_errors = 0;
 % General Settings
 [Iteration_Cap,cfg_errors] = findSetting(CFG,'Iteration_Cap',cfg_errors);
@@ -263,7 +271,7 @@ while deltasum > threshold
     disp(['Iteration ' num2str(count) ':']);
     %% build A and w matrices
     [Awerror, A, w, G, dist_scaling] = BuildAwG(PHO, EXT, CNT, INT, TIE, xhat,...
-        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent);
+        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent, type);
     if Awerror == 1
         disp('Error building A and w');
         main_error = 1;
@@ -419,7 +427,7 @@ if ~isempty(mfiles) % if modified files exist
     fprintf(fileID,['Modified files:\n' mfiles]); % print list of modified files
 end
 fprintf(fileID,line);
-fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' seconds\nIterations:\t\t' num2str(count)]);
+fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' seconds\nIterations:\t\t' num2str(count) '\nModel Used:\t\t' type]);
 
 % settings used
 fprintf(fileID,'\n\nSettings used:\n');
