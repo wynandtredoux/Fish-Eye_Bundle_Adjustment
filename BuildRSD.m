@@ -1,53 +1,29 @@
-function RSD = BuildRSD(v,PHO,EXT,INT,xhat,... %data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent) % settings
+function RSD = BuildRSD(v, data, xhat)
+u_perimage = data.settings.Estimate_Xc + data.settings.Estimate_Yc + data.settings.Estimate_Zc + data.settings.Estimate_w + data.settings.Estimate_p + data.settings.Estimate_k; % unknowns per image
+u_percam = data.settings.Estimate_c + data.settings.Estimate_xp + data.settings.Estimate_yp + data.settings.Estimate_radial*data.settings.Num_Radial_Distortions + data.settings.Estimate_decent*2; % unknowns per camera
 % calculate r,t residuals for all image measurements
-RSD = cell(size(PHO,1),9);
-RSD(:,1:4) = PHO;
+RSD = cell(data.n/2,9);
+RSD(:,1:4) = [{data.points.targetID}' {data.points.imageID}' {data.points.x}' {data.points.y}'];
+
 
 for i = 1:size(RSD,1)
     % get vx,vy from v
     vx = v(2*i-1);
     vy = v(2*i);
-    %% get (xp,yp) for this image (different for each camera)
-    imageID = RSD{i,2};
-    % find correct image in EXT
-    ext_index = -1;
-    for j = 1:length(EXT)
-        if strcmp(EXT{j,1},imageID)
-            ext_index = j;
-            break;
-        end        
-    end
-    % get cameraID in EXT
-    cameraID = EXT{ext_index,2};
-
-    int_index = -1;
-    % find correct camera in INT
-    for j = 1:2:length(INT)
-        if strcmp(INT(j,1),cameraID)
-            int_index = j;
-            break;
-        end        
-    end
-    cam_num = (int_index + 1)/2; % camera number
-    
-    % get xp,yp from xhat or INT depending on settings
-    numimg = size(EXT,1); % total number of images
-    u_perimage = Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k; % unknowns per image
-    u_percam = Estimate_c + Estimate_xp + Estimate_yp + Estimate_radial*Num_Radial_Distortions + Estimate_decent*2; % unknowns per camera
-    xhat_index_IOP = u_perimage*numimg + cam_num*u_percam-(u_percam-1); % rows in xhat where IOPs may be located
+    %% get xp,yp from xhat or data depending on settings
+    xhat_index_IOP = u_perimage*data.numImg + data.points(i).cam_num*u_percam-(u_percam-1); % rows in xhat where IOPs may be located
     xhat_count = 0; % xhat_count = 1 to skip c in xhat if Estimate_c == 1
-    if Estimate_xp == 1
+    if data.settings.Estimate_xp == 1
         xp = xhat(xhat_index_IOP+xhat_count);
         xhat_count = xhat_count + 1;
     else    
-        xp = INT{int_index + 1,1};
+        xp = data.points(i).xp;
     end
-    if Estimate_yp == 1
+    if data.settings.Estimate_yp == 1
         yp = xhat(xhat_index_IOP+xhat_count);
         %xhat_count = xhat_count + 1;
     else    
-        yp = INT{int_index + 1,2};
+        yp = data.points(i).yp;
     end
     
     %% calculate vr and vt

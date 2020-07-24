@@ -27,7 +27,13 @@ function col = printCell(fileID,Mcell,prefix,padding)
             end
             fprintf(fileID,' ');
             % 2nd col
-            fprintf(fileID, Mcell{i,2});
+            if ischar(Mcell{i,2})
+                fprintf(fileID, Mcell{i,2});
+            elseif isa(Mcell{i,2},'double')
+                fprintf(fileID, num2str(Mcell{i,2}));
+            else
+                disp('Error printCell(): invalid datatype in Mcell. Must be char or double')
+            end
         end
         % new line
         fprintf(fileID,'\n');

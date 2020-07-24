@@ -1,19 +1,16 @@
 % create the ux1 xhat vector from the .ext file
-function [error, xhat] = Buildxhat(EXT, INT, TIE, CNT, ... % data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent) % settings
+function [error, xhat] = Buildxhat(data, EXT, INT, TIE, CNT)
 error = 0;
-numImg = size(EXT,1); % number of images
-numCam = size(INT,1)/2;% number of cameras
 
 % figure out how many unknowns based on settings
 u = 0;
 % Xc, Yc, Zc, omega, phi, and kappa add 1 unknown per image each
-u = u + Estimate_Xc*numImg + Estimate_Yc*numImg + Estimate_Zc*numImg;
-u = u + Estimate_w*numImg + Estimate_p*numImg + Estimate_k*numImg;
+u = u + data.settings.Estimate_Xc*data.numImg + data.settings.Estimate_Yc*data.numImg + data.settings.Estimate_Zc*data.numImg;
+u = u + data.settings.Estimate_w*data.numImg + data.settings.Estimate_p*data.numImg + data.settings.Estimate_k*data.numImg;
 % c, xp, and yp add 1 unknown per camera each
-u = u + Estimate_c*numCam + Estimate_xp*numCam + Estimate_yp*numCam;
+u = u + data.settings.Estimate_c*data.numCam + data.settings.Estimate_xp*data.numCam + data.settings.Estimate_yp*data.numCam;
 % radial distortion adds Num_Radial_Distortions unknowns per camera, and decentering distortion adds 2 per camera
-u = u + Estimate_radial*Num_Radial_Distortions*numCam + Estimate_decent*2*numCam;
+u = u + data.settings.Estimate_radial*data.settings.Num_Radial_Distortions*data.numCam + data.settings.Estimate_decent*2*data.numCam;
 % tie points add 3 unknowns per point (X, Y, Z)
 u = u + size(TIE,1)*3;
 
@@ -21,7 +18,7 @@ xhat = zeros(u,1);
 count = 1;
 
 % image EOPs
-for i = 1:numImg
+for i = 1:data.numImg
     Xc = EXT{i,3};
     Yc = EXT{i,4};
     Zc = EXT{i,5};
@@ -29,62 +26,62 @@ for i = 1:numImg
     p = EXT{i,7};
     k = EXT{i,8};
     
-    if Estimate_Xc
+    if data.settings.Estimate_Xc
         xhat(count) = Xc;
         count = count + 1;
     end
-    if Estimate_Yc
+    if data.settings.Estimate_Yc
         xhat(count) = Yc;
         count = count + 1;
     end
-    if Estimate_Zc
+    if data.settings.Estimate_Zc
         xhat(count) = Zc;
         count = count + 1;
     end
-    if Estimate_w
+    if data.settings.Estimate_w
         xhat(count) = w;
         count = count + 1;
     end
-    if Estimate_p
+    if data.settings.Estimate_p
         xhat(count) = p;
         count = count + 1;
     end
-    if Estimate_k
+    if data.settings.Estimate_k
         xhat(count) = k;
         count = count + 1;
     end
 end
 
 % camera IOPs and distortions
-for i=1:numCam
+for i=1:data.numCam
     xp = INT{i*2,1};
     yp = INT{i*2,2};
     c = INT{i*2,3};
     
-    k = [INT{i*2,4:4+Num_Radial_Distortions-1}]';
-    p = [INT{i*2,4+Num_Radial_Distortions:5+Num_Radial_Distortions}]';
+    k = [INT{i*2,4:4+data.settings.Num_Radial_Distortions-1}]';
+    p = [INT{i*2,4+data.settings.Num_Radial_Distortions:5+data.settings.Num_Radial_Distortions}]';
     
     % IOPs
-    if Estimate_xp
+    if data.settings.Estimate_xp
         xhat(count) = xp;
         count = count + 1;
     end
-    if Estimate_yp
+    if data.settings.Estimate_yp
         xhat(count) = yp;
         count = count + 1;
     end
-    if Estimate_c
+    if data.settings.Estimate_c
         xhat(count) = c;
         count = count + 1;
     end
     % Distortions
-    if Estimate_radial
+    if data.settings.Estimate_radial
         for j=1:size(k,1)
             xhat(count) = k(j);
             count = count + 1;
         end
     end
-    if Estimate_decent
+    if data.settings.Estimate_decent
         for j=1:size(p,1)
             xhat(count) = p(j);
             count = count + 1;

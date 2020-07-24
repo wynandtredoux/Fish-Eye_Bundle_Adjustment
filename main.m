@@ -28,7 +28,6 @@ end
         
 projectDir = pwd;
 
-tic %start time
 date = char(datetime); %date
 % get version of code using the "git describe" command
 [gite, version] = system('git describe --dirty'); % "dirty" indicates that the local version has been modified and doesn't fully match the version on github
@@ -106,55 +105,54 @@ TIE = [];
 %% Get settings from cfg file
 % get output filename from cfg (is allowed to error without exiting the program)
 cfg_errors = 0;
-[Output_Filename,cfg_errors] = findSetting(CFG,'Output_Filename',cfg_errors);
+[data.settings.Output_Filename,cfg_errors] = findSetting(CFG,'Output_Filename',cfg_errors);
 if cfg_errors>0 % default filename if none is provided
     [~, Output_Filename, ~] = fileparts(pwd); % set to folder name
-    Output_Filename = strcat(Output_Filename,'.out');
+    data.settings.Output_Filename = strcat(Output_Filename,'.out');
 end
-
+clear Output_Filename
 % get measurement standard deviation (is allowed to error without exiting the program)
 cfg_errors = 0;
-no_std_y = 0;
-[Meas_std,cfg_errors] = findSetting(CFG,'Meas_std',cfg_errors);
+[data.settings.Meas_std,cfg_errors] = findSetting(CFG,'Meas_std',cfg_errors);
 if cfg_errors>0 % if no std is provided, set to 1
-    Meas_std = 1;
-    no_std_y = 1;
+    data.settings.Meas_std = 1;
+    data.settings.no_std_y = 1;
 else
-    [Meas_std_y,no_std_y] = findSetting(CFG,'Meas_std_y',cfg_errors);
+    [data.settings.Meas_std_y,data.settings.no_std_y] = findSetting(CFG,'Meas_std_y',cfg_errors);
 end
 
 % get model type (is allowed to error without exiting the program)
 cfg_errors = 0;
-[type,cfg_errors] = findSetting(CFG,'Type',cfg_errors);
+[data.settings.type,cfg_errors] = findSetting(CFG,'Type',cfg_errors);
 if cfg_errors>0 % if no type is provided, set to fisheye
-    type = 'fisheye';
+    data.settings.type = 'fisheye';
 end
-disp(['Type set to ' type]);
+disp(['Type set to ' data.settings.type]);
 
 cfg_errors = 0;
 % General Settings
-[Iteration_Cap,cfg_errors] = findSetting(CFG,'Iteration_Cap',cfg_errors);
-[threshold,cfg_errors] = findSetting(CFG,'Threshold_Value',cfg_errors);
+[data.settings.Iteration_Cap,cfg_errors] = findSetting(CFG,'Iteration_Cap',cfg_errors);
+[data.settings.threshold,cfg_errors] = findSetting(CFG,'Threshold_Value',cfg_errors);
 % inner constraints
-[Inner_Constraints,cfg_errors] = findSetting(CFG,'Inner_Constraints',cfg_errors,1);
+[data.settings.Inner_Constraints,cfg_errors] = findSetting(CFG,'Inner_Constraints',cfg_errors,1);
 % Estimate EOPs
-[Estimate_Xc,cfg_errors] = findSetting(CFG,'Estimate_Xc',cfg_errors,1);
-[Estimate_Yc,cfg_errors] = findSetting(CFG,'Estimate_Yc',cfg_errors,1);
-[Estimate_Zc,cfg_errors] = findSetting(CFG,'Estimate_Zc',cfg_errors,1);
-[Estimate_w,cfg_errors] = findSetting(CFG,'Estimate_Omega',cfg_errors,1);
-[Estimate_p,cfg_errors] = findSetting(CFG,'Estimate_Phi',cfg_errors,1);
-[Estimate_k,cfg_errors] = findSetting(CFG,'Estimate_Kappa',cfg_errors,1);
+[data.settings.Estimate_Xc,cfg_errors] = findSetting(CFG,'Estimate_Xc',cfg_errors,1);
+[data.settings.Estimate_Yc,cfg_errors] = findSetting(CFG,'Estimate_Yc',cfg_errors,1);
+[data.settings.Estimate_Zc,cfg_errors] = findSetting(CFG,'Estimate_Zc',cfg_errors,1);
+[data.settings.Estimate_w,cfg_errors] = findSetting(CFG,'Estimate_Omega',cfg_errors,1);
+[data.settings.Estimate_p,cfg_errors] = findSetting(CFG,'Estimate_Phi',cfg_errors,1);
+[data.settings.Estimate_k,cfg_errors] = findSetting(CFG,'Estimate_Kappa',cfg_errors,1);
 % Estimate IOPs
-[Estimate_c,cfg_errors] = findSetting(CFG,'Estimate_c',cfg_errors,1);
-[Estimate_xp,cfg_errors] = findSetting(CFG,'Estimate_xp',cfg_errors,1);
-[Estimate_yp,cfg_errors] = findSetting(CFG,'Estimate_yp',cfg_errors,1);
+[data.settings.Estimate_c,cfg_errors] = findSetting(CFG,'Estimate_c',cfg_errors,1);
+[data.settings.Estimate_xp,cfg_errors] = findSetting(CFG,'Estimate_xp',cfg_errors,1);
+[data.settings.Estimate_yp,cfg_errors] = findSetting(CFG,'Estimate_yp',cfg_errors,1);
 % Estimate Distortions
-[Estimate_radial,cfg_errors] = findSetting(CFG,'Estimate_Radial_Distortions',cfg_errors,1);
-[Num_Radial_Distortions,cfg_errors] = findSetting(CFG,'Num_Radial_Distortions',cfg_errors);
-[Estimate_decent,cfg_errors] = findSetting(CFG,'Estimate_Decentering_Distortions',cfg_errors,1);
+[data.settings.Estimate_radial,cfg_errors] = findSetting(CFG,'Estimate_Radial_Distortions',cfg_errors,1);
+[data.settings.Num_Radial_Distortions,cfg_errors] = findSetting(CFG,'Num_Radial_Distortions',cfg_errors);
+[data.settings.Estimate_decent,cfg_errors] = findSetting(CFG,'Estimate_Decentering_Distortions',cfg_errors,1);
 % Estimate Ground Coordinates of tie points
-[Estimate_tie,cfg_errors] = findSetting(CFG,'Estimate_tie',cfg_errors,1);
-[Estimate_AllGCP,cfg_errors] = findSetting(CFG,'Estimate_AllGCP',cfg_errors,1);
+[data.settings.Estimate_tie,cfg_errors] = findSetting(CFG,'Estimate_tie',cfg_errors,1);
+[data.settings.Estimate_AllGCP,cfg_errors] = findSetting(CFG,'Estimate_AllGCP',cfg_errors,1);
 
 if cfg_errors>0
     disp ('Error getting settings')
@@ -163,7 +161,7 @@ if cfg_errors>0
 end
 
 %% Read in tie point list if needed
-if Estimate_tie == 1 && Estimate_AllGCP == 0
+if data.settings.Estimate_tie == 1 && data.settings.Estimate_AllGCP == 0
     [filereaderror, files] = ReadFiles({'.tie'});
     if filereaderror == 1
         disp ('Error reading files')
@@ -174,9 +172,9 @@ if Estimate_tie == 1 && Estimate_AllGCP == 0
 end
 
 %% Estimate_AllGCP
-if Estimate_AllGCP == 1
+if data.settings.Estimate_AllGCP == 1
     TIE = CNT(:,1); % add all targets as TIE points
-    Estimate_tie = 1; % change Estimate_tie to 1 so all GCPs are estiamted
+    data.settings.Estimate_tie = 1; % change Estimate_tie to 1 so all GCPs are estiamted
 end
 
 %% Convert files from String to Cell
@@ -227,7 +225,7 @@ for i = 1:2:size(INT,1)
         tmp(i+1,j) = {str2double(INT(i+1,j))};
     end
     % if no distortion parameters are provided in INT, set them to 0
-    for j = 4:(5+Num_Radial_Distortions)
+    for j = 4:(5+data.settings.Num_Radial_Distortions)
         if size(INT,2)>=j % check that elements exist in INT 
             if ~ismissing(INT(i+1,j)) % check that they are not missing
                 tmp(i+1,j) = {str2double(INT(i+1,j))};
@@ -242,10 +240,116 @@ for i = 1:2:size(INT,1)
 end
 INT = tmp;
 clear tmp
+
+%% Build points structure
+%points = struct('x',zeros(size(PHO,1),1),'y',zeros(size(PHO,1),1),'targetID');
+% Loop through PHO measurements and assign parameters to each measurement
+for i = 1:size(PHO,1) % for each measurement
+    %% Get photo measurements
+    data.points(i).x = PHO{i,3};% x coordinate on the image
+    data.points(i).y = PHO{i,4};% y coordinate on the image
+    data.points(i).targetID = PHO{i,1}; % target name/id
+    data.points(i).imageID = PHO{i,2}; % image ID
+    %% find mathcing EOPs from EXT
+    ext_index = -1;
+    for j = 1:length(EXT)
+        if strcmp(EXT{j,1},data.points(i).imageID)
+            ext_index = j;
+            break;
+        end        
+    end
+    if ext_index < 0
+        errordlg(['Could not find image ' data.points(i).imageID ' from .pho in .ext. Check that the image ID exists in both files'],['Error on image ' data.points(i).imageID]);
+        return
+    end
+    data.points(i).ext_index = ext_index;
+    % get cameraID in EXT
+    data.points(i).cameraID = EXT{ext_index,2};
+    % get EOPs
+    data.points(i).Xc = EXT{ext_index,3};
+    data.points(i).Yc = EXT{ext_index,4};
+    data.points(i).Zc = EXT{ext_index,5};
+    data.points(i).w = EXT{ext_index,6};
+    data.points(i).p = EXT{ext_index,7};
+    data.points(i).k = EXT{ext_index,8};
+    %% find mathcing IOPs from INT
+    int_index = -1;
+    for j = 1:2:length(INT)
+        if strcmp(INT(j,1),data.points(i).cameraID)
+            int_index = j;
+            break;
+        end        
+    end
+    if int_index < 0
+        errordlg(['Could not find camera ' data.points(i).cameraID ' from .ext in .int. Check that the camera ID exists in both files'],['Error on camera ' data.points(i).cameraID]);
+        return
+    end
+    data.points(i).int_index = int_index;
+    data.points(i).cam_num = (int_index + 1)/2;
+    % xp, yp, c
+    data.points(i).xp = INT{int_index + 1,1};
+    data.points(i).yp = INT{int_index + 1,2};
+    data.points(i).c = INT{int_index + 1,3};
+    % distortions
+    data.points(i).K = [INT{int_index + 1,4:4+data.settings.Num_Radial_Distortions-1}]';
+    data.points(i).P = [INT{int_index + 1,4+data.settings.Num_Radial_Distortions:5+data.settings.Num_Radial_Distortions}]';
+    % get y_axis_dir
+    y_dir = INT{int_index,2};
+    % Check that y_dir is +-1
+    if y_dir ~= 1 && y_dir ~= -1
+        disp('y_dir should be +-1 only')
+        return
+    end
+    % get x/y min/max
+    data.points(i).xmin = INT{int_index,3};
+    data.points(i).ymin = INT{int_index,4};
+    data.points(i).xmax = INT{int_index,5};
+    data.points(i).ymax = INT{int_index,6};
+    data.points(i).y_dir = y_dir;
+    %% find ground coordinates from CNT
+    cnt_index = -1;
+    for j = 1:length(CNT)
+        if strcmp(CNT(j,1),data.points(i).targetID)
+            cnt_index = j;
+            break;
+        end        
+    end
+    if cnt_index < 0
+        errordlg(['Could not find target ' data.points(i).targetID ' from .pho in .cnt. Check that the target ID exists in both files'],['Error on target ' data.points(i).targetID]);
+        return
+    end
+    % get object coordinates
+    data.points(i).cnt_index = cnt_index;
+    data.points(i).X = CNT{cnt_index,2};
+    data.points(i).Y = CNT{cnt_index,3};
+    data.points(i).Z = CNT{cnt_index,4};
+    %% check if this is a tie point
+    data.points(i).tieIndex = -1;
+    % find current targetID in TIE
+    for j = 1:size(TIE,1)
+        if strcmp(TIE(j),data.points(i).targetID)
+            data.points(i).tieIndex = j;
+            break;
+        end
+    end
+    
+    if data.points(i).tieIndex ~= -1 % if targetID was found in TIE, then it is a TIE point and must be estimated
+        data.points(i).isTie = 1;
+    else
+        data.points(i).isTie = 0;
+    end
+    
+end
+data.numImg = length(unique({data.points(:).imageID}));
+data.numCam = length(unique({data.points(:).cameraID}));
+data.n = size(data.points,2)*2;
+data.numGCP = length(unique([data.points(:).cnt_index]));
+data.numtie = length(unique([data.points(:).tieIndex]));
+clear PHO y_dir ext_index int_index cnt_index tieIndex
 %% Main Loop
-% initialize xhat (initial values for unknowns)
-[xhaterror, xhat] = Buildxhat(EXT, INT, TIE, CNT, ... % data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
+tic %start time
+% build xhat (initial values for unknowns)
+[xhaterror, xhat] = Buildxhat(data, EXT, INT, TIE, CNT);
 if xhaterror == 1
     disp('Error building xhat');
     main_error = 1;
@@ -254,10 +358,11 @@ end
 
 
 % build P weight matrix from Meas_std and Meas_std_y if provided
-if no_std_y
-    Cl = diag(repmat(Meas_std^2,size(PHO,1)*2,1));
+if data.settings.no_std_y
+    Cl = diag(repmat(data.settings.Meas_std^2,size(data.points,2)*2,1));
+    data.settings = rmfield(data.settings,'Meas_std_y');
 else
-    Cl = diag(repmat([Meas_std^2; Meas_std_y^2;],size(PHO,1),1));
+    Cl = diag(repmat([data.settings.Meas_std^2; data.settings.Meas_std_y^2;],size(data.points,2),1));
 end
 P = Cl^-1;
 
@@ -266,12 +371,11 @@ count = 0;
 xhat_arr = xhat';
 deltasumarr = [];
 % main loop
-while deltasum > threshold
+while deltasum > data.settings.threshold
     count = count + 1;
     disp(['Iteration ' num2str(count) ':']);
-    %% build A and w matrices
-    [Awerror, A, w, G, dist_scaling] = BuildAwG(PHO, EXT, CNT, INT, TIE, xhat,...
-        Inner_Constraints, Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent, type);
+    %% build A and w matrices (and G if applicable)
+    [Awerror, A, w, G, dist_scaling] = BuildAwG(data, xhat);
     if Awerror == 1
         disp('Error building A and w');
         main_error = 1;
@@ -283,7 +387,7 @@ while deltasum > threshold
     N = A'*P*A;
     %Cx = [];
     
-    if Inner_Constraints
+    if data.settings.Inner_Constraints
         NG = [N G;
             G' zeros(size(G,2));];
         uG = [u; zeros(size(G,2),1);];
@@ -317,17 +421,17 @@ while deltasum > threshold
     % for each camera
     for i = 1:size(dist_scaling,1)
         % radial distortion
-        if Estimate_radial
+        if data.settings.Estimate_radial
             % get radial distortion index
             radial_index = dist_scaling(i,1);
             % scale paramaters
-            for j = 1:Num_Radial_Distortions
+            for j = 1:data.settings.Num_Radial_Distortions
                 delta(radial_index+j-1) = delta(radial_index+j-1)/dist_scaling(i,j+2);
                 Cx(radial_index+j-1,radial_index+j-1) = Cx(radial_index+j-1,radial_index+j-1)/dist_scaling(i,j+2);
             end
         end
         % decentering distortion
-        if Estimate_decent
+        if data.settings.Estimate_decent
             % get decentering distortion index
             decent_index = dist_scaling(i,2);
             % scale P1
@@ -347,7 +451,7 @@ while deltasum > threshold
     % residuals
     %v = A*delta + w;
     % constrain loop iterations
-    if count >= Iteration_Cap
+    if count >= data.settings.Iteration_Cap
         disp('Iteration Cap reached. This can be changed in the .cfg file')
         break;
     end
@@ -372,8 +476,7 @@ disp(['Elapsed time is ' char(time) ' seconds.'])
 % calculate x,y residuals for all image measurements
 v = A*delta + w;
 % build RSD and corrected measurements with the format point_id image _id x_obs y_obs radial_dist v_x v_y v_r v_t
-RSD = BuildRSD(v,PHO,EXT,INT,xhat,... %data
-    Estimate_Xc, Estimate_Yc, Estimate_Zc, Estimate_w, Estimate_p, Estimate_k, Estimate_xp, Estimate_yp, Estimate_c, Estimate_radial, Num_Radial_Distortions, Estimate_decent); % settings
+RSD = BuildRSD(v, data, xhat);
 
 % create plot of radial component of the residuals - RSD(:,8) - as a function of radial distance - RSD(:,5)
 if enable_plots
@@ -389,10 +492,9 @@ if enable_plots
 end
 
 %% corrected image coordinates
-PHO_corr = PHO; % get origional coordinates
-for i = 1:length(PHO_corr)
-    PHO_corr(i,3) = {PHO_corr{i,3} + RSD{i,6}}; % correct x coords
-    PHO_corr(i,4) = {PHO_corr{i,4} + RSD{i,7}}; % correct y coords
+for i = 1:length(data.points)
+    data.points(i).x_corr = data.points(i).x + RSD{i,6}; % correct x coords
+    data.points(i).y_corr = data.points(i).y + RSD{i,7}; % correct y coords
 end
 
 %% RMS
@@ -418,7 +520,7 @@ disp('Writing output file...');
 line = '*************************************************************************************************************';
 
 % create output file
-fileID = fopen(Output_Filename,'w');
+fileID = fopen(data.settings.Output_Filename,'w');
 
 % heading
 fprintf(fileID,['Version: ' version]);
@@ -427,51 +529,34 @@ if ~isempty(mfiles) % if modified files exist
     fprintf(fileID,['Modified files:\n' mfiles]); % print list of modified files
 end
 fprintf(fileID,line);
-fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' seconds\nIterations:\t\t' num2str(count) '\nModel Used:\t\t' type]);
+fprintf(fileID,['\n\nExecution date:\t' date '\nTime Taken:\t\t' char(time) ' seconds\nIterations:\t\t' num2str(count) '\nModel Used:\t\t' data.settings.type]);
 
 % settings used
 fprintf(fileID,'\n\nSettings used:\n');
-% tmp = [{'Iteration_Cap'} 	{num2str(Iteration_Cap)}
-% {'Threshold_Value'}	{num2str(threshold)}
-% {'Inner_Constraints'}	{num2str(Inner_Constraints)}
-% {'Estimate_Xc'}	{num2str(Estimate_Xc)}
-% {'Estimate_Yc'}	{num2str(Estimate_Yc)}
-% {'Estimate_Zc'}	{num2str(Estimate_Zc)}
-% {'Estimate_Omega'}	{num2str(Estimate_w)}
-% {'Estimate_Phi'}	{num2str(Estimate_p)}
-% {'Estimate_Kappa'}	{num2str(Estimate_k)}
-% {'Estimate_c'}	{num2str(Estimate_c)}
-% {'Estimate_xp'}	{num2str(Estimate_xp)}
-% {'Estimate_yp'}	{num2str(Estimate_yp)}
-% {'Estimate_Radial_Distortions'}	{num2str(Estimate_radial)}
-% {'Num_Radial_Distortions'}	{num2str(Num_Radial_Distortions)}
-% {'Estimate_tie'}	{num2str(Estimate_tie)}
-% {'Estimate_AllGCP'} {num2str(Estimate_AllGCP)}];
-
-printCell(fileID, CFG, '\t\t', padding);
+printCell(fileID, [fieldnames(data.settings) struct2cell(data.settings)], '\t\t', padding);
 fprintf(fileID, ['\n' line '\n']);
 
 % Summery of unknowns/observations
 fprintf(fileID, '\nObservations/Unknowns Summery\n\n');
 
-tmp = [{'Number of Photos'}	{num2str(size(EXT,1))}
-{'Total EOP unknowns'}	{num2str((Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k)*size(EXT,1))}
-{'Number of Cameras'}	{num2str(size(INT,1)/2)}
-{'Total IOP unknowns'}	{num2str((Estimate_c + Estimate_xp + Estimate_yp)*size(INT,1)/2)}
-{'Total distortion unknowns'}	{num2str((Estimate_radial*Num_Radial_Distortions + Estimate_decent*2)*size(INT,1)/2)}
-{'Number of control points'}	{num2str(size(CNT,1))}
-{'Number of tie/control points to be estimated'}	{num2str(size(TIE,1))}
-{'Number of control/tie point unknowns'}	{num2str(size(TIE,1)*3)}
+tmp = [{'Number of Photos'}	{num2str(data.numImg)}
+{'Total EOP unknowns'}	{num2str((data.settings.Estimate_Xc + data.settings.Estimate_Yc + data.settings.Estimate_Zc + data.settings.Estimate_w + data.settings.Estimate_p + data.settings.Estimate_k)*data.numImg)}
+{'Number of Cameras'}	{num2str(data.numCam)}
+{'Total IOP unknowns'}	{num2str((data.settings.Estimate_c + data.settings.Estimate_xp + data.settings.Estimate_yp)*data.numCam)}
+{'Total distortion unknowns'}	{num2str((data.settings.Estimate_radial*data.settings.Num_Radial_Distortions + data.settings.Estimate_decent*2)*data.numCam)}
+{'Number of tie/control points'}	{num2str(data.numGCP)}
+{'Number of tie/control points to be estimated'}	{num2str(data.numtie)}
+{'Number of control/tie point unknowns'}	{num2str(data.numtie*3)}
 {'\line'}	{''}
 {'Total Unknowns'}	{num2str(length(xhat))}
 {'\n'}	{''}
-{'Number of image points'}	{num2str(size(PHO,1))}
-{'Total number of observations'}	{num2str(size(PHO,1)*2)}
-{'Number of Inner Constraints'}	{num2str(7*Inner_Constraints)}
+{'Number of image points'}	{num2str(data.n/2)}
+{'Total number of observations'}	{num2str(data.n)}
+{'Number of Inner Constraints'}	{num2str(7*data.settings.Inner_Constraints)}
 {'\line'}	{''}
-{'Total Number of Observations'}	{num2str(size(PHO,1)*2 + 7*Inner_Constraints)}
+{'Total Number of Observations'}	{num2str(data.n + 7*data.settings.Inner_Constraints)}
 {'\n'}	{''}
-{'Total Degrees of Freedom'}	{num2str((size(PHO,1)*2 + 7*Inner_Constraints) - length(xhat))}
+{'Total Degrees of Freedom'}	{num2str((data.n + 7*data.settings.Inner_Constraints) - length(xhat))}
 {'\n'}	{''}
 {'Sigma0'}	{num2str(sigma0,10)}
 {'RMSx'}	{num2str(RMSx,10)}
@@ -493,7 +578,7 @@ fprintf(fileID, 'Estimated EOPs\nEOP Name\tValue\tStandard Deviation\n');
 xhat_count = 1;
 for i = 1:size(EXT,1) % for each image
     imageID = EXT{i,1};
-    count = countImagePoints(imageID,PHO);
+    count = countImagePoints(imageID,data);
     fprintf(fileID,'\n');
     tmp = [{'Image'} {imageID}
         {'Camera'} {EXT{i,2}}
@@ -502,34 +587,34 @@ for i = 1:size(EXT,1) % for each image
     printCell(fileID, tmp, '', padding);
     
     % Xc
-    if Estimate_Xc
+    if data.settings.Estimate_Xc
         %fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f\n'),'Xc',xhat(xhat_count),Cx(xhat_count,xhat_count));
         printEOP(fileID,'Xc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         xhat_count = xhat_count + 1;
     end
     % Yc
-    if Estimate_Yc
+    if data.settings.Estimate_Yc
         printEOP(fileID,'Yc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         xhat_count = xhat_count + 1;
     end
     % Xc
-    if Estimate_Zc
+    if data.settings.Estimate_Zc
         printEOP(fileID,'Zc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         xhat_count = xhat_count + 1;
     end
     % orentation angles need to be converted to degrees form radians
     % w
-    if Estimate_w
+    if data.settings.Estimate_w
         printEOP(fileID,'Omega',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
         xhat_count = xhat_count + 1;
     end
     % p
-    if Estimate_p
+    if data.settings.Estimate_p
         printEOP(fileID,'Phi',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
         xhat_count = xhat_count + 1;
     end
     % k
-    if Estimate_k
+    if data.settings.Estimate_k
         printEOP(fileID,'Kappa',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
         xhat_count = xhat_count + 1;
     end    
@@ -560,29 +645,29 @@ for i = 1:size(INT,1)/2 % for each camera
     PAR = [PAR; [{'Camera'} {cameraID} {[]}];];
     printCell(fileID, tmp, '', padding);
     xhat_count_start = xhat_count;
-    if Estimate_xp
+    if data.settings.Estimate_xp
         printEOP(fileID,'xp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         PAR = [PAR; [{'xp'} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
         xhat_count = xhat_count + 1;
     end
-    if Estimate_yp
+    if data.settings.Estimate_yp
         printEOP(fileID,'yp',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         PAR = [PAR; [{'yp'} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
         xhat_count = xhat_count + 1;
     end
-    if Estimate_c
+    if data.settings.Estimate_c
         printEOP(fileID,'c',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
         PAR = [PAR; [{'c'} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
         xhat_count = xhat_count + 1;
     end
-    if Estimate_radial
-        for j = 1:Num_Radial_Distortions
+    if data.settings.Estimate_radial
+        for j = 1:data.settings.Num_Radial_Distortions
             printDist(fileID,strcat('k',num2str(j)),xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
             PAR = [PAR; [{strcat('k',num2str(j))} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
             xhat_count = xhat_count + 1;
         end
     end
-    if Estimate_decent
+    if data.settings.Estimate_decent
         for j = 1:2 
             printDist(fileID,strcat('p',num2str(j)),xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
             PAR = [PAR; [{strcat('p',num2str(j))} {xhat(xhat_count)} {sqrt(Cx(xhat_count,xhat_count))}];];
@@ -613,7 +698,7 @@ end
 fprintf(fileID,['\n' line '\n\nEstimated Ground Coordinates of targets\nTargetID\tnumImages\tX\tY\tZ\tstdX\tstdY\tstdZ\n\n']);
 for i = 1:size(TIE,1) % for each tie point/target
     targetID = TIE(i); % get target name
-    numImages = countTargetImages(targetID,PHO); % get number of images for target
+    numImages = countTargetImages(targetID,data); % get number of images for target
     XYZ = xhat(xhat_count:xhat_count+2); % get estimated XYZ form xhat
     stdxyz = zeros(3,1);
     for j = 1:3 % get estimated standard deviations of XYZ from Cxhat
@@ -625,8 +710,8 @@ end
 
 % corrected image measurements
 fprintf(fileID,['\n' line '\n\nCorrected Image Measurements\nPointID\tImageID\tCorrected x\tCorrected y\n\n']);
-for i = 1:size(PHO_corr,1) % for each point
-    fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'s%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),PHO_corr{i,1},PHO_corr{i,2},PHO_corr{i,3},PHO_corr{i,4});
+for i = 1:data.n/2 % for each point
+    fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'s%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),data.points(i).targetID,data.points(i).imageID,data.points(i).x_corr,data.points(i).y_corr);
 end
 
 
@@ -638,7 +723,7 @@ end
 fclose(fileID);
 
 % output PAR and RSD files
-[~,name,~] = fileparts(Output_Filename);
+[~,name,~] = fileparts(data.settings.Output_Filename);
 writecell(RSD,strcat(name,'.rsd'),'Delimiter','tab','FileType','text');
 writecell(PAR,strcat(name,'.par'),'Delimiter','tab','FileType','text');
 
@@ -649,6 +734,8 @@ end
 
 fclose('all'); % just in case files aren't closed properly
 disp('Done!');
+
+end
 
 %% Functions
 % small functions not worth putting in their own files
@@ -661,21 +748,19 @@ end
 function printTIE(fileID,targetID,numImages,XYZ,stdxyz,width,decimals)
 fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'.','0','i%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f%5$-',width,'.',decimals,'f%6$-',width,'.',decimals,'f%7$-',width,'.',decimals,'f%8$-',width,'.',decimals,'f\n'),targetID,numImages,XYZ(1),XYZ(2),XYZ(3),stdxyz(1),stdxyz(2),stdxyz(3));
 end
-function count = countImagePoints(imageID,PHO)
+function count = countImagePoints(imageID,data)
 count = 0;
-for function_i=1:size(PHO,1)
-    if strcmp(PHO{function_i,2},imageID)
+for function_i=1:size(data.points,2)
+    if strcmp(data.points(function_i).imageID,imageID)
         count = count + 1;
     end
 end
 end
-function count = countTargetImages(targetID,PHO)
+function count = countTargetImages(targetID,data)
 count = 0;
-for function_i=1:size(PHO,1)
-    if strcmp(PHO{function_i,1},targetID)
+for function_i=1:size(data.points,2)
+    if strcmp(data.points(function_i).targetID,targetID)
         count = count + 1;
     end
 end
-end
-
 end
