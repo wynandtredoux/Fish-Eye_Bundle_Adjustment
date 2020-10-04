@@ -479,6 +479,7 @@ v = A*delta + w;
 RSD = BuildRSD(v, data, xhat);
 
 % create plot of radial component of the residuals - RSD(:,8) - as a function of radial distance - RSD(:,5)
+[~,name,~] = fileparts(data.settings.Output_Filename);
 if enable_plots
     fig = figure;
     hold on
@@ -487,7 +488,7 @@ if enable_plots
     xlabel('radial distance r')
     ylabel('radial component of the residuals v_r')
     % save figure
-    saveas(fig,'RSDvR.png');
+    saveas(fig,strcat('RSDvR_',name,'.png'));
     close(fig);
 end
 
@@ -723,7 +724,7 @@ end
 fclose(fileID);
 
 % output PAR and RSD files
-[~,name,~] = fileparts(data.settings.Output_Filename);
+%[~,name,~] = fileparts(data.settings.Output_Filename);
 writecell(RSD,strcat(name,'.rsd'),'Delimiter','tab','FileType','text');
 writecell(PAR,strcat(name,'.par'),'Delimiter','tab','FileType','text');
 
