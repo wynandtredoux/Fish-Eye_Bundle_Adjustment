@@ -559,7 +559,7 @@ tmp = [{'Number of Photos'}	{num2str(data.numImg)}
 {'\n'}	{''}
 {'Total Degrees of Freedom'}	{num2str((data.n + 7*data.settings.Inner_Constraints) - length(xhat))}
 {'\n'}	{''}
-{'Sigma0'}	{num2str(sigma0,10)}
+{'A-Posteriori'}	{num2str(sigma0,10)}
 {'RMSx'}	{num2str(RMSx,10)}
 {'RMSy'}	{num2str(RMSy,10)}
 {'RMS'}	{num2str(RMS,10)}
