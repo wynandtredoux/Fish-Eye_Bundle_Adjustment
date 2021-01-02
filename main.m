@@ -4,14 +4,14 @@
 function main_error = main(varargin)
 %% Setup
 %clear all
-%close all
+close all
 format longg
 %clc
 celldisp(varargin)
 
 main_error = 0;
 enable_plots = 1;
-batch = 0;
+batch = 0; 
 folder = '';
 
 % get data directory if provided
@@ -349,7 +349,7 @@ clear PHO y_dir ext_index int_index cnt_index tieIndex
 %% Main Loop
 tic %start time
 % build xhat (initial values for unknowns)
-[xhaterror, xhat] = Buildxhat(data, EXT, INT, TIE, CNT);
+[xhaterror, xhat, xhatnames] = Buildxhat(data, EXT, INT, TIE, CNT);
 if xhaterror == 1
     disp('Error building xhat');
     main_error = 1;
@@ -364,7 +364,9 @@ if data.settings.no_std_y
 else
     Cl = diag(repmat([data.settings.Meas_std^2; data.settings.Meas_std_y^2;],size(data.points,2),1));
 end
-P = Cl^-1;
+% set a-priori variance factor
+priori = 1;
+P = priori*Cl^-1;
 
 deltasum = 100;
 count = 0;
@@ -448,8 +450,6 @@ while deltasum > data.settings.threshold
         
     deltasum = sumabs(delta)
     deltasumarr = [deltasumarr deltasum];
-    % residuals
-    %v = A*delta + w;
     % constrain loop iterations
     if count >= data.settings.Iteration_Cap
         disp('Iteration Cap reached. This can be changed in the .cfg file')
@@ -462,15 +462,62 @@ disp(['Elapsed time is ' char(time) ' seconds.'])
 
 
 
-% plot normal of delta over time
-% if enable_plots
-%     figure;
-%     hold on
-%     plot(1:length(deltasumarr),deltasumarr)
-%     title('normal of \delta over time')
-%     xlabel('Iteration')
-%     ylabel('normal value')
-% end
+%plot normal of delta over iterations
+if enable_plots
+    figure;
+    hold on
+    plot(deltasumarr)
+    title('normal of \delta over time')
+    xlabel('Iteration')
+    ylabel('normal value')
+end
+
+%plot Xc, Yc, Zc over iterations
+if enable_plots
+    figure;
+    hold on
+    legend_str = [];
+    % Xc
+    if data.settings.Estimate_Xc
+        plot(xhat_arr(:,1))
+        legend_str = [legend_str; 'Xc';];
+    end
+    % Yc
+    if data.settings.Estimate_Yc
+        plot(xhat_arr(:,data.settings.Estimate_Xc + 1))
+        legend_str = [legend_str; 'Yc';];
+    end
+    % Zc
+    if data.settings.Estimate_Zc
+        plot(xhat_arr(:,data.settings.Estimate_Xc + data.settings.Estimate_Yc +1))
+        legend_str = [legend_str; 'Zc';];
+    end
+    legend(legend_str)
+end
+
+%plot w, p, k over iterations
+if enable_plots
+    figure;
+    hold on
+    legend_str = [];
+    offset = data.settings.Estimate_Xc + data.settings.Estimate_Yc + data.settings.Estimate_Zc;
+    % Xc
+    if data.settings.Estimate_w
+        plot(xhat_arr(:,offset + 1))
+        legend_str = [legend_str; 'w';];
+    end
+    % Yc
+    if data.settings.Estimate_p
+        plot(xhat_arr(:,offset + data.settings.Estimate_w + 1))
+        legend_str = [legend_str; 'p';];
+    end
+    % Zc
+    if data.settings.Estimate_k
+        plot(xhat_arr(:,offset + data.settings.Estimate_w + data.settings.Estimate_k + 1))
+        legend_str = [legend_str; 'k';];
+    end
+    legend(legend_str)
+end
 
 %% Residuals
 % calculate x,y residuals for all image measurements
@@ -513,7 +560,7 @@ RMS = sqrt(RMSx^2 + RMSy^2)
 
 %%  variance factor
 sigma0 = sqrt(v'*P*v/(size(A,1)-size(A,2)))
-%Cx = sigma0.*Cx;
+Cx = sigma0.*Cx;
 
 %% Create output file
 padding = 4;
@@ -696,17 +743,28 @@ for i = 1:size(INT,1)/2 % for each camera
 end
 
 % Estimated Ground Coordinates
-fprintf(fileID,['\n' line '\n\nEstimated Ground Coordinates of targets\nTargetID\tnumImages\tX\tY\tZ\tstdX\tstdY\tstdZ\n\n']);
-for i = 1:size(TIE,1) % for each tie point/target
-    targetID = TIE(i); % get target name
-    numImages = countTargetImages(targetID,data); % get number of images for target
-    XYZ = xhat(xhat_count:xhat_count+2); % get estimated XYZ form xhat
-    stdxyz = zeros(3,1);
-    for j = 1:3 % get estimated standard deviations of XYZ from Cxhat
-        stdxyz(j) = sqrt(Cx(xhat_count+j-1,xhat_count+j-1));
+if data.settings.Estimate_tie
+    fprintf(fileID,['\n' line '\n\nEstimated Ground Coordinates of targets\nTargetID\tnumImages\tX\tY\tZ\tstdX\tstdY\tstdZ\n\n']);
+    all_var = [];
+    for i = 1:size(TIE,1) % for each tie point/target
+        targetID = TIE(i); % get target name
+        numImages = countTargetImages(targetID,data); % get number of images for target
+        XYZ = xhat(xhat_count:xhat_count+2); % get estimated XYZ form xhat
+        stdxyz = zeros(3,1);
+        varxyz = zeros(1,3);
+        for j = 1:3 % get estimated standard deviations of XYZ from Cxhat
+            stdxyz(j) = sqrt(Cx(xhat_count+j-1,xhat_count+j-1));
+            varxyz(j) = Cx(xhat_count+j-1,xhat_count+j-1);
+        end
+        all_var = [all_var; varxyz;];
+        printTIE(fileID,targetID,numImages,XYZ,stdxyz,width,decimals); % print to output file
+        xhat_count = xhat_count + 3;    
     end
-    printTIE(fileID,targetID,numImages,XYZ,stdxyz,width,decimals); % print to output file
-    xhat_count = xhat_count + 3;    
+    % compute mean std in X Y and Z
+    avg_std = sqrt(mean(all_var));
+    % print to file
+    fprintf(fileID,'\n\t\tMeanStd X\tMeanStd Y\tMeanStd Z\n');
+    fprintf(fileID,strcat('\t\t%1$-',width,'.',decimals,'f%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f\n'),avg_std(1),avg_std(2),avg_std(3));
 end
 
 % corrected image measurements

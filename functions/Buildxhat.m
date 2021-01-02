@@ -1,5 +1,5 @@
 % create the ux1 xhat vector from the .ext file
-function [error, xhat] = Buildxhat(data, EXT, INT, TIE, CNT)
+function [error, xhat, xhatnames] = Buildxhat(data, EXT, INT, TIE, CNT)
 error = 0;
 
 % figure out how many unknowns based on settings
@@ -15,10 +15,13 @@ u = u + data.settings.Estimate_radial*data.settings.Num_Radial_Distortions*data.
 u = u + size(TIE,1)*3;
 
 xhat = zeros(u,1);
+xhatnames = cell(u,1);
 count = 1;
 
 % image EOPs
 for i = 1:data.numImg
+    image = EXT{i,1};
+    cam = EXT{i,2};
     Xc = EXT{i,3};
     Yc = EXT{i,4};
     Zc = EXT{i,5};
@@ -28,26 +31,32 @@ for i = 1:data.numImg
     
     if data.settings.Estimate_Xc
         xhat(count) = Xc;
+        xhatnames(count) = {strcat('Xc_',image,'_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_Yc
         xhat(count) = Yc;
+        xhatnames(count) = {strcat('Yc_',image,'_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_Zc
         xhat(count) = Zc;
+        xhatnames(count) = {strcat('Zc_',image,'_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_w
         xhat(count) = w;
+        xhatnames(count) = {strcat('w_',image,'_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_p
         xhat(count) = p;
+        xhatnames(count) = {strcat('p_',image,'_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_k
         xhat(count) = k;
+        xhatnames(count) = {strcat('k_',image,'_',cam)};
         count = count + 1;
     end
 end
@@ -57,6 +66,7 @@ for i=1:data.numCam
     xp = INT{i*2,1};
     yp = INT{i*2,2};
     c = INT{i*2,3};
+    cam = INT{i*2-1,1};
     
     k = [INT{i*2,4:4+data.settings.Num_Radial_Distortions-1}]';
     p = [INT{i*2,4+data.settings.Num_Radial_Distortions:5+data.settings.Num_Radial_Distortions}]';
@@ -64,26 +74,31 @@ for i=1:data.numCam
     % IOPs
     if data.settings.Estimate_xp
         xhat(count) = xp;
+        xhatnames(count) = {strcat('xp_','_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_yp
         xhat(count) = yp;
+        xhatnames(count) = {strcat('yp_','_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_c
         xhat(count) = c;
+        xhatnames(count) = {strcat('c_','_',cam)};
         count = count + 1;
     end
     % Distortions
     if data.settings.Estimate_radial
         for j=1:size(k,1)
             xhat(count) = k(j);
+            xhatnames(count) = {strcat('k',num2str(j),'_',cam)};
             count = count + 1;
         end
     end
     if data.settings.Estimate_decent
         for j=1:size(p,1)
             xhat(count) = p(j);
+            xhatnames(count) = {strcat('p',num2str(j),'_',cam)};
             count = count + 1;
         end
     end    
@@ -114,6 +129,7 @@ if size(TIE,1) > 0 % if TIE is not empty
         end
         % add coordinates to xhat
         xhat(count:count+2) = [X;Y;Z;];
+        xhatnames(count:count+2) = [{strcat('X_',targetID)}; {strcat('Y_',targetID)}; {strcat('Z_',targetID)};];
         count = count + 3;
     end
 end
