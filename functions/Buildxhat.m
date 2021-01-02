@@ -74,17 +74,17 @@ for i=1:data.numCam
     % IOPs
     if data.settings.Estimate_xp
         xhat(count) = xp;
-        xhatnames(count) = {strcat('xp_','_',cam)};
+        xhatnames(count) = {strcat('xp_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_yp
         xhat(count) = yp;
-        xhatnames(count) = {strcat('yp_','_',cam)};
+        xhatnames(count) = {strcat('yp_',cam)};
         count = count + 1;
     end
     if data.settings.Estimate_c
         xhat(count) = c;
-        xhatnames(count) = {strcat('c_','_',cam)};
+        xhatnames(count) = {strcat('c_',cam)};
         count = count + 1;
     end
     % Distortions
