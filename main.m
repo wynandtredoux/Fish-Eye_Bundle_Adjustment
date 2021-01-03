@@ -621,51 +621,64 @@ fprintf(fileID, [line '\n\n']);
 decimals = '5';
 width = '14';
 fprintf(fileID, 'Estimated EOPs\nEOP Name\tValue\tStandard Deviation\n');
-%u_perimage = Estimate_Xc + Estimate_Yc + Estimate_Zc + Estimate_w + Estimate_p + Estimate_k; %unknowns per image
 
 xhat_count = 1;
+EOP_IOP_Corr = cell(data.numImg,4); % cell matrix to store EOP/IOP Correlations
 for i = 1:size(EXT,1) % for each image
     imageID = EXT{i,1};
+    camID = EXT{i,2};
+    EOP_IOP_Corr(i,2) = {camID};
     count = countImagePoints(imageID,data);
     fprintf(fileID,'\n');
     tmp = [{'Image'} {imageID}
-        {'Camera'} {EXT{i,2}}
+        {'Camera'} {camID}
         {'Number of image points'} {num2str(count)}
         {'\line'} {''}];
     printCell(fileID, tmp, '', padding);
     
     % Xc
     if data.settings.Estimate_Xc
-        %fprintf(fileID, strcat('%1$-',width,'.',decimals,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f\n'),'Xc',xhat(xhat_count),Cx(xhat_count,xhat_count));
-        printEOP(fileID,'Xc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
-        xhat_count = xhat_count + 1;
+        printEOP(fileID,'Xc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals); % print EOP value and std
+        EOP_IOP_Corr{i,1} = [EOP_IOP_Corr{i,1} xhat_count]; % save EOP xhatindex for later
+        EOP_IOP_Corr{i,3}{end + 1} = 'Xc'; % save EOP name for later
+        xhat_count = xhat_count + 1; % increment xhat_count counter
     end
     % Yc
     if data.settings.Estimate_Yc
         printEOP(fileID,'Yc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        EOP_IOP_Corr{i,1} = [EOP_IOP_Corr{i,1} xhat_count];
+        EOP_IOP_Corr{i,3}{end + 1} = 'Yc';
         xhat_count = xhat_count + 1;
     end
-    % Xc
+    % Zc
     if data.settings.Estimate_Zc
         printEOP(fileID,'Zc',xhat(xhat_count),sqrt(Cx(xhat_count,xhat_count)),width,decimals);
+        EOP_IOP_Corr{i,1} = [EOP_IOP_Corr{i,1} xhat_count];
+        EOP_IOP_Corr{i,3}{end + 1} = 'Zc';
         xhat_count = xhat_count + 1;
     end
     % orentation angles need to be converted to degrees form radians
     % w
     if data.settings.Estimate_w
         printEOP(fileID,'Omega',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
+        EOP_IOP_Corr{i,1} = [EOP_IOP_Corr{i,1} xhat_count];
+        EOP_IOP_Corr{i,3}{end + 1} = 'Omega';
         xhat_count = xhat_count + 1;
     end
     % p
     if data.settings.Estimate_p
         printEOP(fileID,'Phi',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
+        EOP_IOP_Corr{i,1} = [EOP_IOP_Corr{i,1} xhat_count];
+        EOP_IOP_Corr{i,3}{end + 1} = 'Phi';
         xhat_count = xhat_count + 1;
     end
     % k
     if data.settings.Estimate_k
         printEOP(fileID,'Kappa',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
+        EOP_IOP_Corr{i,1} = [EOP_IOP_Corr{i,1} xhat_count];
+        EOP_IOP_Corr{i,3}{end + 1} = 'Kappa';
         xhat_count = xhat_count + 1;
-    end    
+    end
 end
 
 % Estimates for IOPs and distortions for each camera
@@ -723,7 +736,8 @@ for i = 1:size(INT,1)/2 % for each camera
         end
     end
     xhat_count_end = xhat_count - 1;
-    fprintf(fileID,'\nCovariance sub-matrix\n-------------------------------\n');
+    
+    fprintf(fileID,'\nIOP Correlation sub-matrix\n-------------------------------\n');
     Corr_sub = Correlation(xhat_count_start:xhat_count_end,xhat_count_start:xhat_count_end); % get correlation submatrix
     num_IOPs = (xhat_count_end-xhat_count_start);
     names = PAR((i-1)*(num_IOPs+2)+5:(i-1)*(num_IOPs+2)+5+num_IOPs,1); % get IOP list from PAR
@@ -740,6 +754,26 @@ for i = 1:size(INT,1)/2 % for each camera
         fprintf(fileID,'\n'); % new line
     end
     fprintf(fileID,'\n'); % new line
+    
+    % loop through EOP_IOP_Corr array and assign correct IOP indicies for each image
+    for j = 1:size(EOP_IOP_Corr,1) % for each image
+        if cameraID == EOP_IOP_Corr{j,2} % if cameraID matches
+            % append IOP indicies
+            EOP_IOP_Corr{j,1} = [EOP_IOP_Corr{j,1} xhat_count_start:xhat_count_end];
+            % append IOP names
+            EOP_IOP_Corr{j,3} = [EOP_IOP_Corr{j,3} names{:}];
+        end
+        % get EOP/IOP Correlation sub-matrix
+        num_EOPIOP = size(EOP_IOP_Corr{j,1},2);
+        indicies = EOP_IOP_Corr{j,1};
+        sub_mat = zeros(num_EOPIOP);
+        for k = 1:num_EOPIOP % for each row (EOP/IOP)
+            for l = 1:k % for each col in the lower triangle
+                sub_mat(k,l) = Correlation(indicies(k), indicies(l));
+            end
+        end
+        EOP_IOP_Corr{j,4} = sub_mat;
+    end
 end
 
 % Estimated Ground Coordinates
@@ -773,10 +807,48 @@ for i = 1:data.n/2 % for each point
     fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'s%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),data.points(i).targetID,data.points(i).imageID,data.points(i).x_corr,data.points(i).y_corr);
 end
 
-
 if xhat_count ~= size(A,2) + 1
     disp("warning: xhat_count didn't end on it's expected value (unknowns + 1)");
 end
+
+% Calculate Mean correlation coefficients between EOPs and IOPs using EOP_IOP_Corr array
+fprintf(fileID,['\n' line '\n\Absolute (positive) mean correlation coefficients between EOPs and IOPs\n\n']);
+camID = EOP_IOP_Corr{1,2};
+count = 1;
+while true % loop through each camera
+    sum_count = 1;
+    if count > size(EOP_IOP_Corr,1)
+        break; % break when count exceeds EOP_IOP_Corr's rows
+    end
+    fprintf(fileID, ['Camera ' EOP_IOP_Corr{count,2} '\n'])
+    names = [{''}; EOP_IOP_Corr{count,3}';]; % add whitespace
+    fprintf(fileID,'%-6.2s',names{:}); % print cell names at the top
+    fprintf(fileID,'\n')
+    
+    mean_corr = abs(EOP_IOP_Corr{count,4});
+    count = count + 1;
+    while EOP_IOP_Corr{count,2} == camID% while the cameraID stays the same
+        mean_corr = mean_corr + abs(EOP_IOP_Corr{count,4}); % sum the absolute value of the correlation matricies
+        count = count + 1;
+        sum_count = sum_count + 1;
+        if count > size(EOP_IOP_Corr,1)
+            break; % break when count exceeds EOP_IOP_Corr's rows
+        end
+    end
+    % calculate mean correlation
+    mean_corr = mean_corr./sum_count;
+    % print mean correlation submatrix
+    for j = 1:size(mean_corr,1)
+        fprintf(fileID,strcat('%-6.2s'),names{j+1}); % print name
+        for k=1:j
+            fprintf(fileID,strcat('%-+6.2f'),mean_corr(j,k)); % print only lower trianglular part of matrix
+        end
+        fprintf(fileID,'\n'); % new line
+    end
+    fprintf(fileID,'\n'); % new line
+end
+clear sum_count count
+        
 
 % close file
 fclose(fileID);
