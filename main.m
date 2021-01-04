@@ -1,32 +1,38 @@
 %% Bundle adjustment script using equidistant fish-eye model
 % Wynand Tredoux, May 2020
 
+% Usage:  main('folder',plot) - runs the adjustment in 'folder'. 'plot' 
+%             defines if the program should draw plots and can be true (1) or false (0)
+%         main() - uses project folder with plots enabled
+%         main('filepath/myfolder') - runs the adjustment on the given folder
+%         main('', 0) - runs the adjustment on project folder without plots
+
 function main_error = main(varargin)
+%% define parser object
+p = inputParser;
+addOptional(p, 'folder', '', @ischar);
+addOptional(p, 'plot', true, @(x) islogical(x));
+parse(p,varargin{:})
+
 %% Setup
 %clear all
 close all
 format longg
 %clc
 celldisp(varargin)
-
 main_error = 0;
-enable_plots = 1;
-batch = 0; 
-folder = '';
 
-% get data directory if provided
-if ~isempty(varargin)
-    if length(varargin) > 1
-        disp('Error: too many arguments in main');
-        main_error = 1;
-        return
-    else
-        batch = 1;
-        folder = varargin{1};
-    end
+enable_plots = p.Results.plot
+batch = 0; 
+folder = p.Results.folder
+
+% set batch mode if folder is not ''
+if ~strcmp(folder,'')
+    batch = 1;
 end
         
 projectDir = pwd;
+batch
 
 date = char(datetime); %date
 % get version of code using the "git describe" command
@@ -814,13 +820,13 @@ end
 % Calculate Mean correlation coefficients between EOPs and IOPs using EOP_IOP_Corr array
 fprintf(fileID,['\n' line '\n\nAbsolute (positive) mean correlation coefficients between EOPs and IOPs\n\n']);
 EOP_IOP_Corr = sortrows(EOP_IOP_Corr,2); % sort by camera name
-camID = EOP_IOP_Corr{1,2};
 count = 1;
 while true % loop through each camera
     sum_count = 1;
     if count > size(EOP_IOP_Corr,1)
         break; % break when count exceeds EOP_IOP_Corr's rows
     end
+    camID = EOP_IOP_Corr{count,2};
     fprintf(fileID, ['Camera ' EOP_IOP_Corr{count,2} '\n'])
     names = [{''}; EOP_IOP_Corr{count,3}';]; % add whitespace
     fprintf(fileID,'%-6.2s',names{:}); % print cell names at the top
@@ -828,7 +834,7 @@ while true % loop through each camera
     
     mean_corr = abs(EOP_IOP_Corr{count,4});
     count = count + 1;
-    while EOP_IOP_Corr{count,2} == camID % while the cameraID stays the same
+    while strcmp(EOP_IOP_Corr{count,2}, camID) % while the cameraID stays the same
         mean_corr = mean_corr + abs(EOP_IOP_Corr{count,4}); % sum the absolute value of the correlation matricies
         count = count + 1;
         sum_count = sum_count + 1;
@@ -848,8 +854,7 @@ while true % loop through each camera
     end
     fprintf(fileID,'\n'); % new line
 end
-clear sum_count count
-        
+clear sum_count count    
 
 % close file
 fclose(fileID);
