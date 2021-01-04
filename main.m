@@ -812,7 +812,7 @@ if xhat_count ~= size(A,2) + 1
 end
 
 % Calculate Mean correlation coefficients between EOPs and IOPs using EOP_IOP_Corr array
-fprintf(fileID,['\n' line '\n\Absolute (positive) mean correlation coefficients between EOPs and IOPs\n\n']);
+fprintf(fileID,['\n' line '\n\nAbsolute (positive) mean correlation coefficients between EOPs and IOPs\n\n']);
 camID = EOP_IOP_Corr{1,2};
 count = 1;
 while true % loop through each camera
