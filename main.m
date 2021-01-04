@@ -828,7 +828,7 @@ while true % loop through each camera
     
     mean_corr = abs(EOP_IOP_Corr{count,4});
     count = count + 1;
-    while EOP_IOP_Corr{count,2} == camID% while the cameraID stays the same
+    while EOP_IOP_Corr{count,2} == camID % while the cameraID stays the same
         mean_corr = mean_corr + abs(EOP_IOP_Corr{count,4}); % sum the absolute value of the correlation matricies
         count = count + 1;
         sum_count = sum_count + 1;
