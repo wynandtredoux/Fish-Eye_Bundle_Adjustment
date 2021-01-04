@@ -813,6 +813,7 @@ end
 
 % Calculate Mean correlation coefficients between EOPs and IOPs using EOP_IOP_Corr array
 fprintf(fileID,['\n' line '\n\nAbsolute (positive) mean correlation coefficients between EOPs and IOPs\n\n']);
+EOP_IOP_Corr = sortrows(EOP_IOP_Corr,2); % sort by camera name
 camID = EOP_IOP_Corr{1,2};
 count = 1;
 while true % loop through each camera
