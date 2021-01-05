@@ -58,8 +58,8 @@ end
 % loop through folder list
 for i = 1:length(allfolders)
     folder = allfolders{i};
-    % run main script with batch argument
-    error = main(folder);
+    % run main script with batch argument and no plots
+    error = main(folder, false);
     if error == 1
         cd(projectDir);
         break;
