@@ -42,11 +42,11 @@
 clear all
 clc
 projectDir = pwd;
+addpath([projectDir '\functions']); % add functions folder to path
 selpath = uigetdir2(pwd,'Select Data Folders');
 exts = {'.pho','.ext','.cnt','.int'};
 % for debugging:
-% selpath = {'E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\GoPro dataset','E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\Ladybug dataset 1','E:\OneDrive - University of Calgary\Summer2020\More Data\#Raw_Data_Only\Ladybug dataset 2'};
-
+%selpath = {'E:\OneDrive - University of Calgary\Summer2020\big comparison'};
 
 % search through folders and subfolders for all valid sets of data files
 allfolders  = [];
