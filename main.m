@@ -32,7 +32,7 @@ if ~strcmp(folder,'')
 end
         
 projectDir = pwd;
-batch
+addpath([projectDir '\functions']); % add functions folder to path
 
 date = char(datetime); %date
 % get version of code using the "git describe" command
@@ -107,8 +107,10 @@ EXT = files{2};
 CNT = files{3}; 
 INT = files{4};
 TIE = [];
+CZE = [];
 
 %% Get settings from cfg file
+% Settings that are allowed to be missed (have some default values defines here)
 % get output filename from cfg (is allowed to error without exiting the program)
 cfg_errors = 0;
 [data.settings.Output_Filename,cfg_errors] = findSetting(CFG,'Output_Filename',cfg_errors);
@@ -135,7 +137,15 @@ if cfg_errors>0 % if no type is provided, set to fisheye
 end
 disp(['Type set to ' data.settings.type]);
 
+% Calculate check points
 cfg_errors = 0;
+[data.settings.Check_Points,cfg_errors] = findSetting(CFG,'Check_Points',cfg_errors,1);
+if cfg_errors>0 % if no type is provided, set to fisheye
+    data.settings.Check_Points = 0;
+end
+ 
+cfg_errors = 0;
+% settings that *must* be provided (program will exit if they are missing):
 % General Settings
 [data.settings.Iteration_Cap,cfg_errors] = findSetting(CFG,'Iteration_Cap',cfg_errors);
 [data.settings.threshold,cfg_errors] = findSetting(CFG,'Threshold_Value',cfg_errors);
@@ -246,6 +256,17 @@ for i = 1:2:size(INT,1)
 end
 INT = tmp;
 clear tmp
+
+%% Read in check points if needed
+if data.settings.Check_Points
+    [filereaderror, files] = ReadFiles({'.cze'});
+    if filereaderror == 1
+        disp ('Error reading files')
+        main_error = 1;
+        return
+    end
+    CZE = files{1};
+end
 
 %% Build points structure
 %points = struct('x',zeros(size(PHO,1),1),'y',zeros(size(PHO,1),1),'targetID');
@@ -568,6 +589,28 @@ RMS = sqrt(RMSx^2 + RMSy^2)
 sigma0 = sqrt(v'*P*v/(size(A,1)-size(A,2)))
 Cx = sigma0.*Cx;
 
+%% Check point differences
+% this is just the difference between the given check point CZE coordinates and
+% the corresponding calculated object points
+cp_diff = cell(size(CZE,1), size(CZE,2));
+for i = 1:size(CZE,1)
+    % get name of check point
+    cp_diff(i,1) = {CZE{i,1}};
+    % find index of X coord in xhat using xhatnames
+    index = find(strcmp([xhatnames{:}],['X_' CZE{i,1}]));
+    if isempty(index) % if no points were found
+        disp(['Warning: Check point not found in xhat -> ' CZE{i,1}])
+    elseif length(index) > 1 % if more than 1 point was found
+        disp(['Warning: More than 1 match found for -> ' ['X_' CZE{i,1}]])
+    else % exactly 1 point was found
+        % calculate check point difference
+        XYZ = [xhat(index) xhat(index+1) xhat(index+2)]; % estimated XYZ
+        XYZ_cp = str2double([CZE(i,2:4)]); % measured XYZ
+        cp_diff(i,2:4) = num2cell([XYZ - XYZ_cp]); % (estimated - measured)
+    end
+end
+
+
 %% Create output file
 padding = 4;
 disp('Writing output file...');
@@ -855,6 +898,13 @@ while true % loop through each camera
     fprintf(fileID,'\n'); % new line
 end
 clear sum_count count    
+
+% check point differences in cp_diff
+fprintf(fileID,['\n' line '\n\nCheck point differences\n']);
+fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'s%3$-',width,'s%4$-',width,'s\n\n'),'TargetID', 'diff X', 'diff Y', 'diff Z');
+for i = 1:size(cp_diff,1) % for each point
+    fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),cp_diff{i,1},cp_diff{i,2},cp_diff{i,3},cp_diff{i,4});
+end
 
 % close file
 fclose(fileID);
