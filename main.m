@@ -573,17 +573,12 @@ for i = 1:length(data.points)
 end
 
 %% RMS
-% RMSx/RMSy
-sum2x = 0;
-sum2y = 0;
-n = size(v,1)/2;
-for i = 1:n
-    sum2x = sum2x + (v(2*i-1))^2;
-    sum2y = sum2y + (v(2*i))^2;
-end
-RMSx = sqrt(1/n*sum2x)
-RMSy = sqrt(1/n*sum2y)
-RMS = sqrt(RMSx^2 + RMSy^2)
+% RMSx: x residuals are all the odd indicies of v
+RMSx = rms(v(1:2:end));
+% RMSy: y residuals are all the even indicies of v
+RMSy = rms(v(2:2:end));
+
+RMS = sqrt(RMSx^2 + RMSy^2);
 
 %%  variance factor
 sigma0 = sqrt(v'*P*v/(size(A,1)-size(A,2)))
@@ -609,6 +604,9 @@ for i = 1:size(CZE,1)
         cp_diff(i,2:4) = num2cell([XYZ - XYZ_cp]); % (estimated - measured)
     end
 end
+% calculate mean and RMSE of check point differences
+cp_mean = [mean([cp_diff{:,2}]) mean([cp_diff{:,3}]) mean([cp_diff{:,4}])];
+cp_rms = [rms([cp_diff{:,2}]) rms([cp_diff{:,3}]) rms([cp_diff{:,4}])];
 
 
 %% Create output file
@@ -905,6 +903,9 @@ fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'s%3$-',width,'s%4$-',width,'s
 for i = 1:size(cp_diff,1) % for each point
     fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),cp_diff{i,1},cp_diff{i,2},cp_diff{i,3},cp_diff{i,4});
 end
+% print mean and rms check point differences
+fprintf(fileID, strcat('\n%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),'Mean',cp_mean(1),cp_mean(2),cp_mean(3));
+fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),'RMS',cp_rms(1),cp_rms(2),cp_rms(3));
 
 % close file
 fclose(fileID);
@@ -950,4 +951,10 @@ for function_i=1:size(data.points,2)
         count = count + 1;
     end
 end
+end
+% function to calculate rms given a vector y
+function out = rms(y)
+    N = length(y);
+    sumsq = sum(y.^2);
+    out = sqrt(sumsq/N);
 end
