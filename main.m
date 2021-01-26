@@ -38,7 +38,7 @@ date = char(datetime); %date
 % get version of code using the "git describe" command
 [gite, version] = system('git describe --dirty'); % "dirty" indicates that the local version has been modified and doesn't fully match the version on github
 if gite>0
-    disp('Error: could not get git verion with "git describe"')
+    disp('Error: could not get git version with "git describe"')
     disp('Version will be set to "unknown"');
     version = 'Unknown\n';
 end
@@ -190,7 +190,7 @@ end
 %% Estimate_AllGCP
 if data.settings.Estimate_AllGCP == 1
     TIE = CNT(:,1); % add all targets as TIE points
-    data.settings.Estimate_tie = 1; % change Estimate_tie to 1 so all GCPs are estiamted
+    data.settings.Estimate_tie = 1; % change Estimate_tie to 1 so all GCPs are estimated
 end
 
 %% Convert files from String to Cell
@@ -277,7 +277,7 @@ for i = 1:size(PHO,1) % for each measurement
     data.points(i).y = PHO{i,4};% y coordinate on the image
     data.points(i).targetID = PHO{i,1}; % target name/id
     data.points(i).imageID = PHO{i,2}; % image ID
-    %% find mathcing EOPs from EXT
+    %% find matching EOPs from EXT
     ext_index = -1;
     for j = 1:length(EXT)
         if strcmp(EXT{j,1},data.points(i).imageID)
@@ -299,7 +299,7 @@ for i = 1:size(PHO,1) % for each measurement
     data.points(i).w = EXT{ext_index,6};
     data.points(i).p = EXT{ext_index,7};
     data.points(i).k = EXT{ext_index,8};
-    %% find mathcing IOPs from INT
+    %% find matching IOPs from INT
     int_index = -1;
     for j = 1:2:length(INT)
         if strcmp(INT(j,1),data.points(i).cameraID)
@@ -422,12 +422,12 @@ while deltasum > data.settings.threshold
         uG = [u; zeros(size(G,2),1);];
         Cx = NG^-1;
         
-        % seperate k and delta
+        % separate k and delta
         delta_k = -Cx*uG;
         delta = delta_k(1:size(u,1),:);
         %k = delta_k(size(u,1)+1:end,:);
         
-        % seperate Cx into only the unknowns part
+        % separate Cx into only the unknowns part
         Cx = Cx(1:size(A,2),1:size(A,2));
     else
         Cx = N^-1;
@@ -453,7 +453,7 @@ while deltasum > data.settings.threshold
         if data.settings.Estimate_radial
             % get radial distortion index
             radial_index = dist_scaling(i,1);
-            % scale paramaters
+            % scale parameters
             for j = 1:data.settings.Num_Radial_Distortions
                 delta(radial_index+j-1) = delta(radial_index+j-1)/dist_scaling(i,j+2);
                 Cx(radial_index+j-1,radial_index+j-1) = Cx(radial_index+j-1,radial_index+j-1)/dist_scaling(i,j+2);
@@ -573,9 +573,9 @@ for i = 1:length(data.points)
 end
 
 %% RMS
-% RMSx: x residuals are all the odd indicies of v
+% RMSx: x residuals are all the odd indices of v
 RMSx = rms(v(1:2:end));
-% RMSy: y residuals are all the even indicies of v
+% RMSy: y residuals are all the even indices of v
 RMSy = rms(v(2:2:end));
 
 RMS = sqrt(RMSx^2 + RMSy^2);
@@ -704,7 +704,7 @@ for i = 1:size(EXT,1) % for each image
         EOP_IOP_Corr{i,3}{end + 1} = 'Zc';
         xhat_count = xhat_count + 1;
     end
-    % orentation angles need to be converted to degrees form radians
+    % orientation angles need to be converted to degrees form radians
     % w
     if data.settings.Estimate_w
         printEOP(fileID,'Omega',xhat(xhat_count)*180/pi(),sqrt(Cx(xhat_count,xhat_count))*180/pi(),width,decimals);
@@ -785,38 +785,38 @@ for i = 1:size(INT,1)/2 % for each camera
     xhat_count_end = xhat_count - 1;
     
     fprintf(fileID,'\nIOP Correlation sub-matrix\n-------------------------------\n');
-    Corr_sub = Correlation(xhat_count_start:xhat_count_end,xhat_count_start:xhat_count_end); % get correlation submatrix
+    Corr_sub = Correlation(xhat_count_start:xhat_count_end,xhat_count_start:xhat_count_end); % get correlation sub-matrix
     num_IOPs = (xhat_count_end-xhat_count_start);
     names = PAR((i-1)*(num_IOPs+2)+5:(i-1)*(num_IOPs+2)+5+num_IOPs,1); % get IOP list from PAR
     names = [{''}; names;]; % add whitespace
     fprintf(fileID,strcat('%-6.2s'),names{:}); % print cell names at the top
     fprintf(fileID,'\n');
     
-    % print submatrix
+    % print sub-matrix
     for j = 1:size(Corr_sub,1)
         fprintf(fileID,strcat('%-6.2s'),names{j+1}); % print name
         for k=1:j
-            fprintf(fileID,strcat('%-+6.2f'),Corr_sub(j,k)); % print only lower trianglular part of matrix
+            fprintf(fileID,strcat('%-+6.2f'),Corr_sub(j,k)); % print only lower triangular part of matrix
         end
         fprintf(fileID,'\n'); % new line
     end
     fprintf(fileID,'\n'); % new line
     
-    % loop through EOP_IOP_Corr array and assign correct IOP indicies for each image
+    % loop through EOP_IOP_Corr array and assign correct IOP indices for each image
     for j = 1:size(EOP_IOP_Corr,1) % for each image
         if cameraID == EOP_IOP_Corr{j,2} % if cameraID matches
-            % append IOP indicies
+            % append IOP indices
             EOP_IOP_Corr{j,1} = [EOP_IOP_Corr{j,1} xhat_count_start:xhat_count_end];
             % append IOP names
             EOP_IOP_Corr{j,3} = [EOP_IOP_Corr{j,3} names{:}];
         end
         % get EOP/IOP Correlation sub-matrix
         num_EOPIOP = size(EOP_IOP_Corr{j,1},2);
-        indicies = EOP_IOP_Corr{j,1};
+        indices = EOP_IOP_Corr{j,1};
         sub_mat = zeros(num_EOPIOP);
         for k = 1:num_EOPIOP % for each row (EOP/IOP)
             for l = 1:k % for each col in the lower triangle
-                sub_mat(k,l) = Correlation(indicies(k), indicies(l));
+                sub_mat(k,l) = Correlation(indices(k), indices(l));
             end
         end
         EOP_IOP_Corr{j,4} = sub_mat;
@@ -876,7 +876,7 @@ while true % loop through each camera
     mean_corr = abs(EOP_IOP_Corr{count,4});
     count = count + 1;
     while strcmp(EOP_IOP_Corr{count,2}, camID) % while the cameraID stays the same
-        mean_corr = mean_corr + abs(EOP_IOP_Corr{count,4}); % sum the absolute value of the correlation matricies
+        mean_corr = mean_corr + abs(EOP_IOP_Corr{count,4}); % sum the absolute value of the correlation matrices
         count = count + 1;
         sum_count = sum_count + 1;
         if count > size(EOP_IOP_Corr,1)
@@ -885,11 +885,11 @@ while true % loop through each camera
     end
     % calculate mean correlation
     mean_corr = mean_corr./sum_count;
-    % print mean correlation submatrix
+    % print mean correlation sub-matrix
     for j = 1:size(mean_corr,1)
         fprintf(fileID,strcat('%-6.2s'),names{j+1}); % print name
         for k=1:j
-            fprintf(fileID,strcat('%-+6.2f'),mean_corr(j,k)); % print only lower trianglular part of matrix
+            fprintf(fileID,strcat('%-+6.2f'),mean_corr(j,k)); % print only lower triangular part of matrix
         end
         fprintf(fileID,'\n'); % new line
     end
