@@ -32,7 +32,7 @@ end
 % if setting cannot be found
 if ~settingfound
     error_tally = error_tally + 1;
-    disp(['Error:findSetting() could not find setting ' str]);
+    disp(['warning:findSetting() could not find setting ' str]);
     return
 end
 

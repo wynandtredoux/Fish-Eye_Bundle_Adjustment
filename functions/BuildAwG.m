@@ -1,10 +1,10 @@
 %% Build design matrix A, misclosure matrix w and inner constrains design matrix G
 % data - contains points and settings structures
 %       points - structure containing all info about each image point:
-%           [x y targetID imageID ext_index cameraID Xc Yc Zc omeaga phi kappa int_index cam_num xp yp c K(radial distortion) P(decentering distortion) y_dir]
+%           [x y targetID imageID ext_index cameraID Xc Yc Zc omega phi kappa int_index cam_num xp yp c K(radial distortion) P(decentering distortion) y_dir]
 %       settings - contains all values from .cfg file
 %           BuildG - build interior orientation constraints matrix
-%           Estimate... - Toggle estimation of Xc,Yc,Zc,omeaga,phi,kappa,xp,yp,c,radial distortion parameters, and decentering distortion parameters
+%           Estimate... - Toggle estimation of Xc,Yc,Zc,omega,phi,kappa,xp,yp,c,radial distortion parameters, and decentering distortion parameters
 %           Num_Radial_Distortions - number of radial distortion parameters
 %           type - model to be used, valid values are 'fisheye', 'pinhole', 'equisolid', 'orthographic', or 'stereographic'
 % CNT - Object Point Coordinates [PointID  X  Y  Z]
@@ -402,7 +402,7 @@ for i=1:data.n/2
     % Distortion partial derivatives must be scaled to avoid poor conditioning of the normal equations matrix
     % calculate max possible radial distortion rmax
     rmax = sqrt(((data.points(i).xmax-data.points(i).xmin)*0.5)^2+((data.points(i).ymax-data.points(i).ymin)*0.5)^2);
-    % calculate scale facors
+    % calculate scale factors
     for j = 1:data.settings.Num_Radial_Distortions
         dist_scaling(data.points(i).cam_num,2+j) = rmax^(2*j);
     end
