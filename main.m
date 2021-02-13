@@ -38,7 +38,7 @@ date = char(datetime); %date
 % get version of code using the "git describe" command
 [gite, version] = system('git describe --dirty'); % "dirty" indicates that the local version has been modified and doesn't fully match the version on github
 if gite>0
-    disp('Error: could not get git version with "git describe"')
+    disp('warning: could not get git version with "git describe"')
     disp('Version will be set to "unknown"');
     version = 'Unknown\n';
 end
@@ -140,7 +140,7 @@ disp(['Type set to ' data.settings.type]);
 % Calculate check points
 cfg_errors = 0;
 [data.settings.Check_Points,cfg_errors] = findSetting(CFG,'Check_Points',cfg_errors,1);
-if cfg_errors>0 % if no type is provided, set to fisheye
+if cfg_errors>0 % default to no check points
     data.settings.Check_Points = 0;
 end
  
@@ -487,21 +487,24 @@ end
 time = num2str(toc);
 disp(['Elapsed time is ' char(time) ' seconds.'])
 
-
+[~,name,~] = fileparts(data.settings.Output_Filename);
 
 %plot normal of delta over iterations
 if enable_plots
-    figure;
+    fig = figure;
     hold on
     plot(deltasumarr)
     title('normal of \delta over time')
     xlabel('Iteration')
     ylabel('normal value')
+    
+    saveas(fig,strcat('delta_',name,'.png'));
+    close(fig);
 end
 
 %plot Xc, Yc, Zc over iterations
 if enable_plots
-    figure;
+    fig = figure;
     hold on
     legend_str = [];
     % Xc
@@ -520,11 +523,14 @@ if enable_plots
         legend_str = [legend_str; 'Zc';];
     end
     legend(legend_str)
+    
+    saveas(fig,strcat('XcYcZc_',name,'.png'));
+    close(fig);
 end
 
 %plot w, p, k over iterations
 if enable_plots
-    figure;
+    fig = figure;
     hold on
     legend_str = [];
     offset = data.settings.Estimate_Xc + data.settings.Estimate_Yc + data.settings.Estimate_Zc;
@@ -544,6 +550,9 @@ if enable_plots
         legend_str = [legend_str; 'k';];
     end
     legend(legend_str)
+    
+    saveas(fig,strcat('wpk_',name,'.png'));
+    close(fig);
 end
 
 %% Residuals
@@ -553,7 +562,6 @@ v = A*delta + w;
 RSD = BuildRSD(v, data, xhat);
 
 % create plot of radial component of the residuals - RSD(:,8) - as a function of radial distance - RSD(:,5)
-[~,name,~] = fileparts(data.settings.Output_Filename);
 if enable_plots
     fig = figure;
     hold on
@@ -581,32 +589,34 @@ RMSy = rms(v(2:2:end));
 RMS = sqrt(RMSx^2 + RMSy^2);
 
 %%  variance factor
-sigma0 = sqrt(v'*P*v/(size(A,1)-size(A,2)))
-Cx = sigma0.*Cx;
+sigma02 = v'*P*v/(size(A,1)-size(A,2))
+Cx = sigma02.*Cx;
 
-%% Check point differences
-% this is just the difference between the given check point CZE coordinates and
-% the corresponding calculated object points
-cp_diff = cell(size(CZE,1), size(CZE,2));
-for i = 1:size(CZE,1)
-    % get name of check point
-    cp_diff(i,1) = {CZE{i,1}};
-    % find index of X coord in xhat using xhatnames
-    index = find(strcmp([xhatnames{:}],['X_' CZE{i,1}]));
-    if isempty(index) % if no points were found
-        disp(['Warning: Check point not found in xhat -> ' CZE{i,1}])
-    elseif length(index) > 1 % if more than 1 point was found
-        disp(['Warning: More than 1 match found for -> ' ['X_' CZE{i,1}]])
-    else % exactly 1 point was found
-        % calculate check point difference
-        XYZ = [xhat(index) xhat(index+1) xhat(index+2)]; % estimated XYZ
-        XYZ_cp = str2double([CZE(i,2:4)]); % measured XYZ
-        cp_diff(i,2:4) = num2cell([XYZ - XYZ_cp]); % (estimated - measured)
+%% Check point differences - if used
+if data.settings.Check_Points
+    % this is just the difference between the given check point CZE coordinates and
+    % the corresponding calculated object points
+    cp_diff = cell(size(CZE,1), size(CZE,2));
+    for i = 1:size(CZE,1)
+        % get name of check point
+        cp_diff(i,1) = {CZE{i,1}};
+        % find index of X coord in xhat using xhatnames
+        index = find(strcmp([xhatnames{:}],['X_' CZE{i,1}]));
+        if isempty(index) % if no points were found
+            disp(['Warning: Check point not found in xhat -> ' CZE{i,1}])
+        elseif length(index) > 1 % if more than 1 point was found
+            disp(['Warning: More than 1 match found for -> ' ['X_' CZE{i,1}]])
+        else % exactly 1 point was found
+            % calculate check point difference
+            XYZ = [xhat(index) xhat(index+1) xhat(index+2)]; % estimated XYZ
+            XYZ_cp = str2double([CZE(i,2:4)]); % measured XYZ
+            cp_diff(i,2:4) = num2cell([XYZ - XYZ_cp]); % (estimated - measured)
+        end
     end
+    % calculate mean and RMSE of check point differences
+    cp_mean = [mean([cp_diff{:,2}]) mean([cp_diff{:,3}]) mean([cp_diff{:,4}])];
+    cp_rms = [rms([cp_diff{:,2}]) rms([cp_diff{:,3}]) rms([cp_diff{:,4}])];
 end
-% calculate mean and RMSE of check point differences
-cp_mean = [mean([cp_diff{:,2}]) mean([cp_diff{:,3}]) mean([cp_diff{:,4}])];
-cp_rms = [rms([cp_diff{:,2}]) rms([cp_diff{:,3}]) rms([cp_diff{:,4}])];
 
 
 %% Create output file
@@ -653,7 +663,7 @@ tmp = [{'Number of Photos'}	{num2str(data.numImg)}
 {'\n'}	{''}
 {'Total Degrees of Freedom'}	{num2str((data.n + 7*data.settings.Inner_Constraints) - length(xhat))}
 {'\n'}	{''}
-{'A-Posteriori'}	{num2str(sigma0,10)}
+{'A-Posteriori'}	{num2str(sigma02,10)}
 {'RMSx'}	{num2str(RMSx,10)}
 {'RMSy'}	{num2str(RMSy,10)}
 {'RMS'}	{num2str(RMS,10)}
@@ -868,10 +878,10 @@ while true % loop through each camera
         break; % break when count exceeds EOP_IOP_Corr's rows
     end
     camID = EOP_IOP_Corr{count,2};
-    fprintf(fileID, ['Camera ' EOP_IOP_Corr{count,2} '\n'])
+    fprintf(fileID, ['Camera ' EOP_IOP_Corr{count,2} '\n']);
     names = [{''}; EOP_IOP_Corr{count,3}';]; % add whitespace
     fprintf(fileID,'%-6.2s',names{:}); % print cell names at the top
-    fprintf(fileID,'\n')
+    fprintf(fileID,'\n');
     
     mean_corr = abs(EOP_IOP_Corr{count,4});
     count = count + 1;
@@ -898,14 +908,16 @@ end
 clear sum_count count    
 
 % check point differences in cp_diff
-fprintf(fileID,['\n' line '\n\nCheck point differences\n']);
-fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'s%3$-',width,'s%4$-',width,'s\n\n'),'TargetID', 'diff X', 'diff Y', 'diff Z');
-for i = 1:size(cp_diff,1) % for each point
-    fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),cp_diff{i,1},cp_diff{i,2},cp_diff{i,3},cp_diff{i,4});
+if data.settings.Check_Points
+    fprintf(fileID,['\n' line '\n\nCheck point differences\n']);
+    fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'s%3$-',width,'s%4$-',width,'s\n\n'),'TargetID', 'diff X', 'diff Y', 'diff Z');
+    for i = 1:size(cp_diff,1) % for each point
+        fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),cp_diff{i,1},cp_diff{i,2},cp_diff{i,3},cp_diff{i,4});
+    end
+    % print mean and rms check point differences
+    fprintf(fileID, strcat('\n%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),'Mean',cp_mean(1),cp_mean(2),cp_mean(3));
+    fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),'RMS',cp_rms(1),cp_rms(2),cp_rms(3));
 end
-% print mean and rms check point differences
-fprintf(fileID, strcat('\n%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),'Mean',cp_mean(1),cp_mean(2),cp_mean(3));
-fprintf(fileID, strcat('%1$-',width,'s%2$-',width,'.',decimals,'f%3$-',width,'.',decimals,'f%4$-',width,'.',decimals,'f\n'),'RMS',cp_rms(1),cp_rms(2),cp_rms(3));
 
 % close file
 fclose(fileID);
