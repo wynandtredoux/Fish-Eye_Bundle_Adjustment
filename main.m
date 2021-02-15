@@ -32,7 +32,7 @@ if ~strcmp(folder,'')
 end
         
 projectDir = pwd;
-addpath([projectDir '\functions']); % add functions folder to path
+%addpath([projectDir '\functions']); % add functions folder to path
 
 date = char(datetime); %date
 % get version of code using the "git describe" command
@@ -286,7 +286,8 @@ for i = 1:size(PHO,1) % for each measurement
         end        
     end
     if ext_index < 0
-        errordlg(['Could not find image ' data.points(i).imageID ' from .pho in .ext. Check that the image ID exists in both files'],['Error on image ' data.points(i).imageID]);
+        err_dlg = errordlg(['Could not find image ' data.points(i).imageID ' from .pho in .ext. Check that the image ID exists in both files'],['Error on image ' data.points(i).imageID]);
+        waitfor(err_dlg);  % code execution is stopped till err_dlg is dismissed.
         return
     end
     data.points(i).ext_index = ext_index;
@@ -308,7 +309,8 @@ for i = 1:size(PHO,1) % for each measurement
         end        
     end
     if int_index < 0
-        errordlg(['Could not find camera ' data.points(i).cameraID ' from .ext in .int. Check that the camera ID exists in both files'],['Error on camera ' data.points(i).cameraID]);
+        err_dlg = errordlg(['Could not find camera ' data.points(i).cameraID ' from .ext in .int. Check that the camera ID exists in both files'],['Error on camera ' data.points(i).cameraID]);
+        waitfor(err_dlg);  % code execution is stopped till err_dlg is dismissed.
         return
     end
     data.points(i).int_index = int_index;
@@ -342,7 +344,8 @@ for i = 1:size(PHO,1) % for each measurement
         end        
     end
     if cnt_index < 0
-        errordlg(['Could not find target ' data.points(i).targetID ' from .pho in .cnt. Check that the target ID exists in both files'],['Error on target ' data.points(i).targetID]);
+        err_dlg = errordlg(['Could not find target ' data.points(i).targetID ' from .pho in .cnt. Check that the target ID exists in both files'],['Error on target ' data.points(i).targetID]);
+        waitfor(err_dlg);  % code execution is stopped till err_dlg is dismissed.
         return
     end
     % get object coordinates
