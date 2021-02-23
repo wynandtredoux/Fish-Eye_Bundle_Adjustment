@@ -1,6 +1,6 @@
 %% Batch run
 % Run main.m for n number of datasets
-% BatchRun.m will search selected folers and all subfolders for sets of cnt, int, ext, and pho files
+% BatchRun.m will search selected folders and all subfolders for sets of cnt, int, ext, and pho files
 % output files from main.m will be created in each subfolder
 
 % Usage: 
@@ -92,7 +92,7 @@ if ~isempty(files_only) % if the folder contains files
                     if strcmp(found{index_k},ext)
                         % if more than 1 file of a certain type was found, output warning to console
                         disp(['Warning: More than 1 ' ext ' file was found in ' folder]);
-                        found = []; % reset found to supress 2nd output to console
+                        found = []; % reset found to suppress 2nd output to console
                         break;
                     end
                 end
