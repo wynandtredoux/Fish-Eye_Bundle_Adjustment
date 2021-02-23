@@ -374,7 +374,7 @@ data.numImg = length(unique({data.points(:).imageID}));
 data.numCam = length(unique({data.points(:).cameraID}));
 data.n = size(data.points,2)*2;
 data.numGCP = length(unique([data.points(:).cnt_index]));
-data.numtie = length(unique([data.points(:).tieIndex]));
+data.numtie = length(TIE);
 clear PHO y_dir ext_index int_index cnt_index tieIndex
 %% Main Loop
 tic %start time
