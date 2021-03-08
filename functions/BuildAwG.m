@@ -371,11 +371,29 @@ for i=1:data.n/2
     
     % partial derivatives 
     if data.settings.Estimate_xp % same for Fish-eye vs Collinearity
-        Ablock_IOPs(:,count_A) = [1;0;];
+        % calculate part of partial derivatives from radial distortion
+        dxp_rad = 0;
+        dyp_rad = 0;
+        for j = 1:data.settings.Num_Radial_Distortions % for each radial distortion parameter
+            dxp_rad = dxp_rad - (K(j)*r^(2*j)) - (2*j*K(j)*x_bar^2*r^((j-1)*2));
+            dyp_rad = dyp_rad - (2*j*K(j)*x_bar*y_bar*r^((j-1)*2));
+        end     
+        % calculate full partial derivatives
+        Ablock_IOPs(:,count_A) = [1 + dxp_rad - 6*P(1)*x_bar - 2*P(2)*y_bar; % dx/dxp
+            0 + dyp_rad - 2*P(1)*y_bar - 2*P(2)*x_bar;]; % dx/dyp
         count_A = count_A + 1;
     end
     if data.settings.Estimate_yp % same for Fish-eye vs Collinearity
-        Ablock_IOPs(:,count_A) = [0;1;];
+        % calculate part of partial derivatives from radial distortion
+        dxp_rad = 0;
+        dyp_rad = 0;
+        for j = 1:data.settings.Num_Radial_Distortions % for each radial distortion parameter
+            dxp_rad = dxp_rad - (2*j*K(j)*x_bar*y_bar*r^((j-1)*2));
+            dyp_rad = dyp_rad - (K(j)*r^(2*j)) - (2*j*K(j)*y_bar^2*r^((j-1)*2));            
+        end     
+        % calculate full partial derivatives
+        Ablock_IOPs(:,count_A) = [0 + dxp_rad - 2*P(2)*x_bar - 2*P(1)*y_bar; % dy/dxp
+            1 + dyp_rad - 6*P(2)*y_bar - 2*P(1)*x_bar;]; % dy/dyp
         count_A = count_A + 1;
     end
     if data.settings.Estimate_c % different for Fish-eye vs Collinearity
