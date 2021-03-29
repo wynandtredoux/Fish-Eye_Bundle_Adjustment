@@ -28,7 +28,7 @@ u_percam = data.settings.Estimate_c + data.settings.Estimate_xp + data.settings.
 % dist_scaling = [(xhat index for radial)(xhat index for decentering)(scale1)(scale2)(scale3)...] <- Cam0
 %                [(xhat index for radial)(xhat index for decentering)(scale1)(scale2)(scale3)...] <- Cam1
 %                ...
-% Where scale = rmax^2*i
+% Where scale = rmax^(2*i)
 dist_scaling = zeros(data.numCam,2+data.settings.Num_Radial_Distortions);
 
 if data.settings.Inner_Constraints

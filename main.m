@@ -459,7 +459,7 @@ while deltasum > data.settings.threshold
             % scale parameters
             for j = 1:data.settings.Num_Radial_Distortions
                 delta(radial_index+j-1) = delta(radial_index+j-1)/dist_scaling(i,j+2);
-                Cx(radial_index+j-1,radial_index+j-1) = Cx(radial_index+j-1,radial_index+j-1)/dist_scaling(i,j+2);
+                Cx(radial_index+j-1,radial_index+j-1) = Cx(radial_index+j-1,radial_index+j-1)/(dist_scaling(i,j+2).^2);
             end
         end
         % decentering distortion
