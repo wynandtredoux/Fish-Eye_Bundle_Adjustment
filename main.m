@@ -188,10 +188,10 @@ if data.settings.Estimate_tie == 1 && data.settings.Estimate_AllGCP == 0
 end
 
 %% Estimate_AllGCP
-if data.settings.Estimate_AllGCP == 1
-    TIE = CNT(:,1); % add all targets as TIE points
-    data.settings.Estimate_tie = 1; % change Estimate_tie to 1 so all GCPs are estimated
-end
+% if data.settings.Estimate_AllGCP == 1
+%     TIE = CNT(:,1); % add all targets found in PHO as TIE points
+%     data.settings.Estimate_tie = 1; % change Estimate_tie to 1 so all GCPs are estimated
+% end
 
 %% Convert files from String to Cell
 % PHO
@@ -256,6 +256,12 @@ for i = 1:2:size(INT,1)
 end
 INT = tmp;
 clear tmp
+
+%% Estimate_AllGCP
+if data.settings.Estimate_AllGCP == 1
+    TIE = unique(PHO(:,1)); % add all targets found in PHO as TIE points
+    data.settings.Estimate_tie = 1; % change Estimate_tie to 1 so all GCPs are estimated
+end
 
 %% Read in check points if needed
 if data.settings.Check_Points
@@ -468,10 +474,10 @@ while deltasum > data.settings.threshold
             decent_index = dist_scaling(i,2);
             % scale P1
             delta(decent_index) = delta(decent_index)/dist_scaling(i,3);
-            Cx(decent_index,decent_index) = Cx(decent_index,decent_index)/dist_scaling(i,3);
+            Cx(decent_index,decent_index) = Cx(decent_index,decent_index)/(dist_scaling(i,3).^2);
             % scale P2
             delta(decent_index+1) = delta(decent_index+1)/dist_scaling(i,3);
-            Cx(decent_index+1,decent_index+1) = Cx(decent_index+1,decent_index+1)/dist_scaling(i,3);
+            Cx(decent_index+1,decent_index+1) = Cx(decent_index+1,decent_index+1)/(dist_scaling(i,3).^2);
         end
     end
     
@@ -644,8 +650,8 @@ fprintf(fileID,'\n\nSettings used:\n');
 printCell(fileID, [fieldnames(data.settings) struct2cell(data.settings)], '\t\t', padding);
 fprintf(fileID, ['\n' line '\n']);
 
-% Summery of unknowns/observations
-fprintf(fileID, '\nObservations/Unknowns Summery\n\n');
+% Summary of unknowns/observations
+fprintf(fileID, '\nObservations/Unknowns Summary\n\n');
 
 tmp = [{'Number of Photos'}	{num2str(data.numImg)}
 {'Total EOP unknowns'}	{num2str((data.settings.Estimate_Xc + data.settings.Estimate_Yc + data.settings.Estimate_Zc + data.settings.Estimate_w + data.settings.Estimate_p + data.settings.Estimate_k)*data.numImg)}
@@ -677,9 +683,30 @@ printCell(fileID, tmp, '', padding);
 
 fprintf(fileID, [line '\n\n']);
 
+
+decimals = '5'; % number of decimal places in .out file
+% determine longest targetID
+unique_IDs = unique({data.points.targetID});
+target_width = 0; % width for targetIDs
+for i = 1:length(unique_IDs)
+    if length(unique_IDs{i}) > target_width
+        target_width = length(unique_IDs{i});
+    end
+end
+% determine longest imgID
+unique_IDs = unique({data.points.imageID});
+img_width = 0; % width for image IDs
+for i = 1:length(unique_IDs)
+    if length(unique_IDs{i}) > target_width
+        img_width = length(unique_IDs{i});
+    end
+end
+clear unique_IDs
+num_width = 12; % width for numbers
+width = num2str(max([target_width img_width num_width]) + 2);
+clear target_width img_width num_width
+
 % Estimated EOPs for each image
-decimals = '5';
-width = '14';
 fprintf(fileID, 'Estimated EOPs\nEOP Name\tValue\tStandard Deviation\n');
 
 xhat_count = 1;
@@ -841,7 +868,7 @@ if data.settings.Estimate_tie
     fprintf(fileID,['\n' line '\n\nEstimated Ground Coordinates of targets\nTargetID\tnumImages\tX\tY\tZ\tstdX\tstdY\tstdZ\n\n']);
     all_var = [];
     for i = 1:size(TIE,1) % for each tie point/target
-        targetID = TIE(i); % get target name
+        targetID = TIE{i}; % get target name
         numImages = countTargetImages(targetID,data); % get number of images for target
         XYZ = xhat(xhat_count:xhat_count+2); % get estimated XYZ form xhat
         stdxyz = zeros(3,1);
